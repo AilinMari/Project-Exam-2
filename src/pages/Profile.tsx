@@ -292,7 +292,7 @@ export default function ProfilePage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Bookings List - Left Side (1/3 width) */}
+          {/* Left Side (1/3 width) */}
           <div className="lg:col-span-1 space-y-6">
             {/* My Bookings / Venue Bookings */}
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -304,10 +304,10 @@ export default function ProfilePage() {
               {profile.venueManager ? (
                 // Show venue bookings for managers
                 (() => {
-                  const venueBookings = venues.flatMap(venue => 
+                  const venueBookings: Booking[] = venues.flatMap(venue => 
                     (venue.bookings || []).map(booking => ({
                       ...booking,
-                      venue: { id: venue.id, name: venue.name, media: venue.media }
+                      venue: venue
                     }))
                   );
                   
@@ -377,7 +377,29 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Upcoming Booking */}
+            {/* My Venues (Only for Venue Managers) */}
+            {profile.venueManager && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-red-600">
+                    My Venues
+                  </h2>
+                  <button
+                    onClick={() => setShowCreateVenueModal(true)}
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                  >
+                    + Create Venue
+                  </button>
+                </div>
+                <VenueList
+                  venues={venues}
+                  onEdit={handleEditVenue}
+                  onDelete={handleDeleteVenue}
+                />
+              </div>
+            )}
+
+            {/* Upcoming Booking (Only for Customers) */}
             {!profile.venueManager && bookings.length > 0 && (() => {
               const upcomingBooking = bookings
                 .filter(b => new Date(b.dateFrom) >= new Date())
@@ -430,15 +452,16 @@ export default function ProfilePage() {
             })()}
           </div>
 
-          {/* Bookings Calendar - Right Side (2/3 width) */}
+          {/* Calendar - Right Side (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Calendar */}
             {(() => {
               // For managers, show venue bookings; for customers, show their bookings
-              const calendarBookings = profile.venueManager 
+              const calendarBookings: Booking[] = profile.venueManager 
                 ? venues.flatMap(venue => 
                     (venue.bookings || []).map(booking => ({
                       ...booking,
-                      venue: { id: venue.id, name: venue.name, media: venue.media }
+                      venue: venue
                     }))
                   )
                 : bookings;
@@ -456,28 +479,6 @@ export default function ProfilePage() {
             })()}
           </div>
         </div>
-
-        {/* Venues Section (Only for Venue Managers) */}
-        {profile.venueManager && (
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-red-600">
-                My Venues
-              </h2>
-              <button
-                onClick={() => setShowCreateVenueModal(true)}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                + Create Venue
-              </button>
-            </div>
-            <VenueList
-              venues={venues}
-              onEdit={handleEditVenue}
-              onDelete={handleDeleteVenue}
-            />
-          </div>
-        )}
       </div>
 
       {/* Modals */}

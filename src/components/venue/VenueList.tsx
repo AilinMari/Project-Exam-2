@@ -17,7 +17,7 @@ export default function VenueList({ venues, onEdit, onDelete }: VenueListProps) 
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {venues.map((venue) => (
         <div key={venue.id} className="bg-white rounded-lg shadow-md overflow-hidden">
           <Link to={`/venues/${venue.id}`}>

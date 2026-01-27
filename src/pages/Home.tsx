@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { Venue, ApiResponse } from '../types';
 import SearchBar from '../components/SearchBar';
 import FeaturedVenuesCarousel from '../components/FeaturedVenuesCarousel';
+import VenueCard from '../components/venue/VenueCard';
 
 export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -194,67 +195,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVenues.map((venue) => (
-            <Link
-              key={venue.id}
-              to={`/venues/${venue.id}`}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
-            >
-              <div className="h-48 bg-gray-200">
-                {venue.media?.[0]?.url ? (
-                  <img
-                    src={venue.media[0].url}
-                    alt={venue.media[0].alt || venue.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    No image available
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {venue.name}
-                </h2>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                  {venue.description}
-                </p>
-                
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-2xl font-bold text-blue-600">
-                    ${venue.price}
-                    <span className="text-sm text-gray-600">/night</span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Max {venue.maxGuests} guests
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-3 text-xs">
-                  {venue.meta.wifi && (
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      WiFi
-                    </span>
-                  )}
-                  {venue.meta.parking && (
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                      Parking
-                    </span>
-                  )}
-                  {venue.meta.breakfast && (
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      Breakfast
-                    </span>
-                  )}
-                  {venue.meta.pets && (
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                      Pets
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Link>
+              <VenueCard key={venue.id} venue={venue} />
             ))}
           </div>
         )}

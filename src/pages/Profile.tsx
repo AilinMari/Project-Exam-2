@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import { Profile, Booking, Venue, ApiResponse, UpdateProfileData, CreateVenueData } from '../types';
+import EditProfileModal from '../components/modals/EditProfileModal';
+import VenueFormModal from '../components/modals/VenueFormModal';
+import VenueList from '../components/venue/VenueList';
+import BookingCalendar from '../components/booking/BookingCalendar';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -11,44 +15,13 @@ export default function ProfilePage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editFormData, setEditFormData] = useState<UpdateProfileData>({
-    bio: '',
-    avatar: { url: '', alt: '' },
-    banner: { url: '', alt: '' },
-  });
-  const [saving, setSaving] = useState(false);
-  
-  // Create Venue Modal State
   const [showCreateVenueModal, setShowCreateVenueModal] = useState(false);
-  const [venueFormData, setVenueFormData] = useState<CreateVenueData>({
-    name: '',
-    description: '',
-    price: 0,
-    maxGuests: 1,
-    rating: 0,
-    media: [],
-    meta: {
-      wifi: false,
-      parking: false,
-      breakfast: false,
-      pets: false,
-    },
-    location: {
-      address: '',
-      city: '',
-      zip: '',
-      country: '',
-      continent: '',
-      lat: 0,
-      lng: 0,
-    },
-  });
-  const [creatingVenue, setCreatingVenue] = useState(false);
-  
-  // Edit Venue Modal State
   const [showEditVenueModal, setShowEditVenueModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
-  const [editVenueFormData, setEditVenueFormData] = useState<CreateVenueData>({
+  const [creatingVenue, setCreatingVenue] = useState(false);
+  const [updatingVenue, setUpdatingVenue] = useState(false);
+
+  const emptyVenueFormData: CreateVenueData = {
     name: '',
     description: '',
     price: 0,
@@ -70,8 +43,7 @@ export default function ProfilePage() {
       lat: 0,
       lng: 0,
     },
-  });
-  const [updatingVenue, setUpdatingVenue] = useState(false);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -82,116 +54,75 @@ export default function ProfilePage() {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch profile with bookings and venues included
-        const profileResponse = await apiClient.get<ApiResponse<Profile>>(
-          `${API_ENDPOINTS.profileByName(userName)}?_bookings=true&_venues=true`,
-          true
-        );
-        setProfile(profileResponse.data);
-
-        // Fetch bookings separately with venue details
-        try {
-          const bookingsResponse = await apiClient.get<ApiResponse<Booking[]>>(
-            `${API_ENDPOINTS.profileBookings(userName)}?_venue=true`,
-            true
-          );
-          setBookings(bookingsResponse.data);
-        } catch (bookingErr) {
-          console.warn('Could not fetch bookings:', bookingErr);
-          setBookings([]);
-        }
-
-        // Fetch venues if venue manager
-        if (profileResponse.data.venueManager) {
-          try {
-            const venuesResponse = await apiClient.get<ApiResponse<Venue[]>>(
-              `${API_ENDPOINTS.profileVenues(userName)}?_bookings=true`,
-              true
-            );
-            setVenues(venuesResponse.data);
-          } catch (venueErr) {
-            console.warn('Could not fetch venues:', venueErr);
-            setVenues([]);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        // If unauthorized, redirect to login
-        if (err instanceof Error && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('userName');
-          navigate('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchData(userName);
   }, [navigate]);
 
-  const handleDeleteBooking = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-
+  const fetchData = async (userName: string) => {
     try {
-      await apiClient.delete(API_ENDPOINTS.bookingById(bookingId), true);
-      setBookings(bookings.filter((b) => b.id !== bookingId));
-      alert('Booking cancelled successfully');
-    } catch {
-      alert('Failed to cancel booking');
+      setLoading(true);
+      
+      // Fetch profile with bookings and venues
+      const profileResponse = await apiClient.get<ApiResponse<Profile>>(
+        `${API_ENDPOINTS.profileByName(userName)}?_bookings=true&_venues=true`,
+        true
+      );
+      setProfile(profileResponse.data);
+
+      // Fetch bookings with venue details
+      try {
+        const bookingsResponse = await apiClient.get<ApiResponse<Booking[]>>(
+          `${API_ENDPOINTS.profileBookings(userName)}?_venue=true`,
+          true
+        );
+        setBookings(bookingsResponse.data || []);
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+        setBookings([]);
+      }
+
+      // Fetch venues if user is a venue manager
+      if (profileResponse.data.venueManager) {
+        try {
+          const venuesResponse = await apiClient.get<ApiResponse<Venue[]>>(
+            API_ENDPOINTS.profileVenues(userName),
+            true
+          );
+          setVenues(venuesResponse.data || []);
+        } catch (err) {
+          console.error('Error fetching venues:', err);
+          setVenues([]);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      alert('Failed to load profile data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOpenEditModal = () => {
-    if (profile) {
-      setEditFormData({
-        bio: profile.bio || '',
-        avatar: profile.avatar || { url: '', alt: '' },
-        banner: profile.banner || { url: '', alt: '' },
-      });
-      setShowEditModal(true);
-    }
-  };
-
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateProfile = async (data: UpdateProfileData) => {
     if (!profile) return;
 
-    setSaving(true);
     try {
       const userName = localStorage.getItem('userName');
       if (!userName) return;
 
-      // Prepare update data - only include fields that have values
       const updateData: UpdateProfileData = {};
       
-      if (editFormData.bio) {
-        updateData.bio = editFormData.bio;
-      }
-      
-      if (editFormData.avatar?.url) {
+      if (data.bio) updateData.bio = data.bio;
+      if (data.avatar?.url) {
         updateData.avatar = {
-          url: editFormData.avatar.url,
-          alt: editFormData.avatar.alt || profile.name,
+          url: data.avatar.url,
+          alt: data.avatar.alt || profile.name,
         };
       }
-      
-      if (editFormData.banner?.url) {
+      if (data.banner?.url) {
         updateData.banner = {
-          url: editFormData.banner.url,
-          alt: editFormData.banner.alt || `${profile.name} banner`,
+          url: data.banner.url,
+          alt: data.banner.alt || `${profile.name} banner`,
         };
       }
-
-      console.log('Updating profile with:', updateData);
 
       const response = await apiClient.put<ApiResponse<Profile>>(
         API_ENDPOINTS.updateProfile(userName),
@@ -200,133 +131,59 @@ export default function ProfilePage() {
       );
 
       setProfile(response.data);
-      setShowEditModal(false);
       alert('Profile updated successfully!');
     } catch (err) {
       console.error('Error updating profile:', err);
-      alert('Failed to update profile. Please try again.');
-    } finally {
-      setSaving(false);
+      alert('Failed to update profile');
+      throw err;
     }
   };
 
-  const handleOpenCreateVenueModal = () => {
-    setShowCreateVenueModal(true);
-  };
-
-  const handleCloseCreateVenueModal = () => {
-    setShowCreateVenueModal(false);
-    // Reset form
-    setVenueFormData({
-      name: '',
-      description: '',
-      price: 0,
-      maxGuests: 1,
-      rating: 0,
-      media: [],
-      meta: {
-        wifi: false,
-        parking: false,
-        breakfast: false,
-        pets: false,
-      },
-      location: {
-        address: '',
-        city: '',
-        zip: '',
-        country: '',
-        continent: '',
-        lat: 0,
-        lng: 0,
-      },
-    });
-  };
-
-  const handleCreateVenue = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateVenue = async (formData: CreateVenueData) => {
     setCreatingVenue(true);
-
     try {
       const response = await apiClient.post<ApiResponse<Venue>>(
         API_ENDPOINTS.venues,
-        venueFormData,
+        formData,
         true
       );
 
-      console.log('Venue created:', response.data);
-      
-      // Add the new venue to the venues list
       setVenues([...venues, response.data]);
       setShowCreateVenueModal(false);
       alert('Venue created successfully!');
-      
-      // Reset form
-      handleCloseCreateVenueModal();
     } catch (err) {
       console.error('Error creating venue:', err);
       alert('Failed to create venue. Please try again.');
+      throw err;
     } finally {
       setCreatingVenue(false);
     }
   };
 
-  const handleOpenEditVenueModal = (venue: Venue) => {
+  const handleEditVenue = (venue: Venue) => {
     setEditingVenue(venue);
-    setEditVenueFormData({
-      name: venue.name,
-      description: venue.description,
-      price: venue.price,
-      maxGuests: venue.maxGuests,
-      rating: venue.rating,
-      media: venue.media || [],
-      meta: venue.meta || {
-        wifi: false,
-        parking: false,
-        breakfast: false,
-        pets: false,
-      },
-      location: venue.location || {
-        address: '',
-        city: '',
-        zip: '',
-        country: '',
-        continent: '',
-        lat: 0,
-        lng: 0,
-      },
-    });
     setShowEditVenueModal(true);
   };
 
-  const handleCloseEditVenueModal = () => {
-    setShowEditVenueModal(false);
-    setEditingVenue(null);
-  };
-
-  const handleUpdateVenue = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateVenue = async (formData: CreateVenueData) => {
     if (!editingVenue) return;
 
     setUpdatingVenue(true);
-
     try {
       const response = await apiClient.put<ApiResponse<Venue>>(
         API_ENDPOINTS.venueById(editingVenue.id),
-        editVenueFormData,
+        formData,
         true
       );
 
-      console.log('Venue updated:', response.data);
-      
-      // Update the venue in the venues list
       setVenues(venues.map(v => v.id === editingVenue.id ? response.data : v));
       setShowEditVenueModal(false);
+      setEditingVenue(null);
       alert('Venue updated successfully!');
-      
-      handleCloseEditVenueModal();
     } catch (err) {
       console.error('Error updating venue:', err);
       alert('Failed to update venue. Please try again.');
+      throw err;
     } finally {
       setUpdatingVenue(false);
     }
@@ -345,6 +202,19 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (!confirm('Are you sure you want to delete this booking?')) return;
+
+    try {
+      await apiClient.delete(API_ENDPOINTS.bookingById(bookingId), true);
+      setBookings(bookings.filter(b => b.id !== bookingId));
+      alert('Booking deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      alert('Failed to delete booking. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -360,6 +230,23 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const editProfileData: UpdateProfileData = {
+    bio: profile.bio || '',
+    avatar: profile.avatar || { url: '', alt: '' },
+    banner: profile.banner || { url: '', alt: '' },
+  };
+
+  const editVenueData: CreateVenueData = editingVenue ? {
+    name: editingVenue.name,
+    description: editingVenue.description,
+    media: editingVenue.media || [],
+    price: editingVenue.price,
+    maxGuests: editingVenue.maxGuests,
+    rating: editingVenue.rating || 0,
+    meta: editingVenue.meta,
+    location: editingVenue.location,
+  } : emptyVenueFormData;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -388,7 +275,7 @@ export default function ProfilePage() {
                   Hello,<br />{profile.name}!
                 </h1>
                 <button 
-                  onClick={handleOpenEditModal}
+                  onClick={() => setShowEditModal(true)}
                   className={`mt-2 text-white px-4 py-1 rounded text-sm ${
                     profile.venueManager 
                       ? 'bg-red-600 hover:bg-red-700' 
@@ -402,857 +289,176 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Dashboard Content */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Manage My Venues */}
-          {profile.venueManager && (
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="bg-red-100 px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Manage My Venues</h2>
-              </div>
-              <div className="p-6 space-y-3">
-                {venues.length === 0 ? (
-                  <p className="text-gray-600 text-sm">No venues yet</p>
-                ) : (
-                  venues.map((venue) => (
-                    <div key={venue.id} className="flex items-center justify-between border-b border-gray-200 pb-3 last:border-0">
-                      <div className="flex-1">
-                        <Link 
-                          to={`/venues/${venue.id}`}
-                          className="font-medium text-gray-900 hover:text-red-600"
-                        >
-                          {venue.name}
-                        </Link>
-                      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Bookings List - Left Side (1/3 width) */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* My Bookings */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className={`text-2xl font-bold mb-4 ${
+                profile.venueManager ? 'text-red-600' : 'text-blue-600'
+              }`}>
+                My Bookings
+              </h2>
+              {bookings.length === 0 ? (
+                <p className="text-gray-600">No bookings yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {bookings.map((booking) => (
+                    <div 
+                      key={booking.id} 
+                      className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded transition-colors"
+                    >
+                      <span className="text-gray-900 font-medium flex-1">
+                        {booking.venue?.name || 'Venue'}
+                      </span>
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleOpenEditVenueModal(venue)}
-                          className="text-sm text-blue-600 hover:text-blue-800"
+                        <button
+                          onClick={() => navigate(`/venues/${booking.venue?.id}`)}
+                          className={`text-xs px-2 py-1 rounded ${
+                            profile.venueManager 
+                              ? 'text-red-600 hover:bg-red-50' 
+                              : 'text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title="View venue"
                         >
-                          Edit
+                          View
                         </button>
-                        <button 
-                          onClick={() => handleDeleteVenue(venue.id)}
-                          className="text-sm text-red-600 hover:text-red-800"
+                        <button
+                          onClick={() => handleDeleteBooking(booking.id)}
+                          className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
+                          title="Delete booking"
                         >
                           Delete
                         </button>
                       </div>
                     </div>
-                  ))
-                )}
-                <button 
-                  onClick={handleOpenCreateVenueModal}
-                  className="w-full text-left text-red-600 hover:text-red-800 font-medium text-sm mt-4">
-                  + Add New Venue
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Admin Tools */}
-          {profile.venueManager && (
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="bg-orange-100 px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Admin Tools</h2>
-              </div>
-              <div className="p-6 space-y-3">
-                <button 
-                  onClick={handleOpenCreateVenueModal}
-                  className="w-full text-left px-4 py-3 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="text-gray-900 font-medium">Create Venue</span>
-                </button>
-                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <span className="text-gray-900 font-medium">Manage bookings</span>
-                </button>
-                <button 
-                  onClick={handleOpenEditModal}
-                  className="w-full text-left px-4 py-3 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="text-gray-900 font-medium">Update Profile</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Venue Bookings - For Customers */}
-          {!profile.venueManager && (
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="bg-blue-100 px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">My Bookings</h2>
-              </div>
-              <div className="p-6 space-y-3">
-                {bookings.length === 0 ? (
-                  <p className="text-gray-600 text-sm">No bookings yet</p>
-                ) : (
-                  bookings.map((booking) => (
-                    <div key={booking.id} className="border border-gray-200 rounded-md p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-gray-900">{booking.venue?.name || 'Venue'}</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(booking.dateFrom).toLocaleDateString()} - {new Date(booking.dateTo).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteBooking(booking.id)}
-                          className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Venue Bookings - For Managers */}
-          {profile.venueManager && (
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="bg-red-100 px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Venue Bookings</h2>
-              </div>
-              <div className="p-6 space-y-3">
-                {bookings.length === 0 ? (
-                  <p className="text-gray-600 text-sm">No bookings yet</p>
-                ) : (
-                  bookings.map((booking) => (
-                    <div key={booking.id} className="border-b border-gray-200 pb-3 last:border-0">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">John Doe</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(booking.dateFrom).toLocaleDateString()} - {new Date(booking.dateTo).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <button className="text-sm bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700">
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Calendar */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className={`px-6 py-3 border-b ${
-            profile.venueManager ? 'bg-red-50' : 'bg-blue-50'
-          }`}>
-            <h2 className="text-lg font-semibold text-gray-900">Calendar</h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-7 gap-2 mb-2">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                <div key={idx} className="text-center text-sm font-medium text-gray-700 py-2">
-                  {day}
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 35 }, (_, i) => {
-                const day = i - 2; // Start from a specific day offset
-                const isToday = day === 15;
-                return (
-                  <div
-                    key={i}
-                    className={`aspect-square border border-gray-200 flex items-center justify-center text-sm ${
-                      day < 1 || day > 31
-                        ? 'text-gray-300'
-                        : isToday
-                        ? `${profile.venueManager ? 'bg-red-600' : 'bg-blue-600'} text-white font-bold`
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {day > 0 && day <= 31 ? day : ''}
+
+            {/* Upcoming Booking */}
+            {bookings.length > 0 && (() => {
+              const upcomingBooking = bookings
+                .filter(b => new Date(b.dateFrom) >= new Date())
+                .sort((a, b) => new Date(a.dateFrom).getTime() - new Date(b.dateFrom).getTime())[0];
+              
+              return upcomingBooking ? (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className={`text-lg font-bold mb-4 ${
+                    profile.venueManager ? 'text-red-600' : 'text-blue-600'
+                  }`}>
+                    Upcoming Booking
+                  </h2>
+                  <div className="space-y-3">
+                    {upcomingBooking.venue?.media?.[0]?.url && (
+                      <img
+                        src={upcomingBooking.venue.media[0].url}
+                        alt={upcomingBooking.venue.name}
+                        className="w-full h-48 rounded-lg object-cover"
+                      />
+                    )}
+                    <div>
+                      <h3 className={`font-bold text-lg ${
+                        profile.venueManager ? 'text-red-600' : 'text-blue-600'
+                      }`}>
+                        {upcomingBooking.venue?.name || 'Venue'}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {new Date(upcomingBooking.dateFrom).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })} - {new Date(upcomingBooking.dateTo).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                    <button 
+                      className={`w-full py-2 px-4 rounded text-white ${
+                        profile.venueManager 
+                          ? 'bg-red-600 hover:bg-red-700' 
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                    >
+                      View Details
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              ) : null;
+            })()}
+          </div>
+
+          {/* Bookings Calendar - Right Side (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            {bookings.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className={`text-2xl font-bold mb-4 ${
+                  profile.venueManager ? 'text-red-600' : 'text-blue-600'
+                }`}>
+                  Calendar
+                </h2>
+                <BookingCalendar bookings={bookings} />
+              </div>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* Venues Section (Only for Venue Managers) */}
+        {profile.venueManager && (
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-red-600">
+                My Venues
+              </h2>
+              <button
+                onClick={() => setShowCreateVenueModal(true)}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                + Create Venue
+              </button>
+            </div>
+            <VenueList
+              venues={venues}
+              onEdit={handleEditVenue}
+              onDelete={handleDeleteVenue}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Create Venue Modal */}
-      {showCreateVenueModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Create New Venue</h2>
-                <button
-                  onClick={handleCloseCreateVenueModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
+      {/* Modals */}
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateProfile}
+        initialData={editProfileData}
+      />
 
-              <form onSubmit={handleCreateVenue} className="space-y-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Venue Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={venueFormData.name}
-                      onChange={(e) => setVenueFormData({ ...venueFormData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      placeholder="Beautiful Beach House"
-                    />
-                  </div>
+      <VenueFormModal
+        isOpen={showCreateVenueModal}
+        onClose={() => setShowCreateVenueModal(false)}
+        onSubmit={handleCreateVenue}
+        initialData={emptyVenueFormData}
+        title="Create New Venue"
+        submitButtonText="Create Venue"
+        isSubmitting={creatingVenue}
+      />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description *
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={venueFormData.description}
-                      onChange={(e) => setVenueFormData({ ...venueFormData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      placeholder="Describe your venue..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Price per Night *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        value={venueFormData.price}
-                        onChange={(e) => setVenueFormData({ ...venueFormData, price: parseFloat(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Guests *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        value={venueFormData.maxGuests}
-                        onChange={(e) => setVenueFormData({ ...venueFormData, maxGuests: parseInt(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Image URLs */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Images
-                    </label>
-                    <div className="space-y-3">
-                      {venueFormData.media && venueFormData.media.length > 0 ? (
-                        venueFormData.media.map((image, index) => (
-                          <div key={index} className="flex gap-2">
-                            <input
-                              type="url"
-                              value={image.url}
-                              onChange={(e) => {
-                                const newMedia = [...venueFormData.media!];
-                                newMedia[index] = { url: e.target.value, alt: venueFormData.name || 'Venue image' };
-                                setVenueFormData({ ...venueFormData, media: newMedia });
-                              }}
-                              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                              placeholder="https://example.com/venue-image.jpg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newMedia = venueFormData.media!.filter((_, i) => i !== index);
-                                setVenueFormData({ ...venueFormData, media: newMedia });
-                              }}
-                              className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500">No images added yet</div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newMedia = [...(venueFormData.media || []), { url: '', alt: venueFormData.name || 'Venue image' }];
-                          setVenueFormData({ ...venueFormData, media: newMedia });
-                        }}
-                        className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-red-500 hover:text-red-600"
-                      >
-                        + Add Image URL
-                      </button>
-                    </div>
-                    
-                    {/* Image Previews */}
-                    {venueFormData.media && venueFormData.media.some(img => img.url) && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          {venueFormData.media
-                            .filter(img => img.url)
-                            .map((image, index) => (
-                              <img
-                                key={index}
-                                src={image.url}
-                                alt={`Venue preview ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-md"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Amenities</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={venueFormData.meta?.wifi}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          meta: { ...venueFormData.meta!, wifi: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">WiFi</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={venueFormData.meta?.parking}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          meta: { ...venueFormData.meta!, parking: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Parking</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={venueFormData.meta?.breakfast}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          meta: { ...venueFormData.meta!, breakfast: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Breakfast</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={venueFormData.meta?.pets}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          meta: { ...venueFormData.meta!, pets: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Pets Allowed</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Location</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={venueFormData.location?.city || ''}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          location: { ...venueFormData.location!, city: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        value={venueFormData.location?.country || ''}
-                        onChange={(e) => setVenueFormData({
-                          ...venueFormData,
-                          location: { ...venueFormData.location!, country: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button
-                    type="button"
-                    onClick={handleCloseCreateVenueModal}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                    disabled={creatingVenue}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 ${
-                      creatingVenue ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={creatingVenue}
-                  >
-                    {creatingVenue ? 'Creating...' : 'Create Venue'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Venue Modal */}
-      {showEditVenueModal && editingVenue && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit Venue</h2>
-                <button
-                  onClick={handleCloseEditVenueModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateVenue} className="space-y-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Venue Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editVenueFormData.name}
-                      onChange={(e) => setEditVenueFormData({ ...editVenueFormData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description *
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={editVenueFormData.description}
-                      onChange={(e) => setEditVenueFormData({ ...editVenueFormData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Price per Night *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        value={editVenueFormData.price}
-                        onChange={(e) => setEditVenueFormData({ ...editVenueFormData, price: parseFloat(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Guests *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        value={editVenueFormData.maxGuests}
-                        onChange={(e) => setEditVenueFormData({ ...editVenueFormData, maxGuests: parseInt(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Image URLs */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Images
-                    </label>
-                    <div className="space-y-3">
-                      {editVenueFormData.media && editVenueFormData.media.length > 0 ? (
-                        editVenueFormData.media.map((image, index) => (
-                          <div key={index} className="flex gap-2">
-                            <input
-                              type="url"
-                              value={image.url}
-                              onChange={(e) => {
-                                const newMedia = [...editVenueFormData.media!];
-                                newMedia[index] = { url: e.target.value, alt: editVenueFormData.name || 'Venue image' };
-                                setEditVenueFormData({ ...editVenueFormData, media: newMedia });
-                              }}
-                              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                              placeholder="https://example.com/venue-image.jpg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newMedia = editVenueFormData.media!.filter((_, i) => i !== index);
-                                setEditVenueFormData({ ...editVenueFormData, media: newMedia });
-                              }}
-                              className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500">No images added yet</div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newMedia = [...(editVenueFormData.media || []), { url: '', alt: editVenueFormData.name || 'Venue image' }];
-                          setEditVenueFormData({ ...editVenueFormData, media: newMedia });
-                        }}
-                        className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600"
-                      >
-                        + Add Image URL
-                      </button>
-                    </div>
-                    
-                    {/* Image Previews */}
-                    {editVenueFormData.media && editVenueFormData.media.some(img => img.url) && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          {editVenueFormData.media
-                            .filter(img => img.url)
-                            .map((image, index) => (
-                              <img
-                                key={index}
-                                src={image.url}
-                                alt={`Venue preview ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-md"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Amenities</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={editVenueFormData.meta?.wifi}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          meta: { ...editVenueFormData.meta!, wifi: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">WiFi</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={editVenueFormData.meta?.parking}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          meta: { ...editVenueFormData.meta!, parking: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Parking</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={editVenueFormData.meta?.breakfast}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          meta: { ...editVenueFormData.meta!, breakfast: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Breakfast</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={editVenueFormData.meta?.pets}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          meta: { ...editVenueFormData.meta!, pets: e.target.checked }
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Pets Allowed</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Location</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={editVenueFormData.location?.city || ''}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          location: { ...editVenueFormData.location!, city: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        value={editVenueFormData.location?.country || ''}
-                        onChange={(e) => setEditVenueFormData({
-                          ...editVenueFormData,
-                          location: { ...editVenueFormData.location!, country: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button
-                    type="button"
-                    onClick={handleCloseEditVenueModal}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                    disabled={updatingVenue}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 ${
-                      updatingVenue ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={updatingVenue}
-                  >
-                    {updatingVenue ? 'Updating...' : 'Update Venue'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Profile Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit Profile</h2>
-                <button
-                  onClick={handleCloseEditModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                {/* Bio */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bio
-                  </label>
-                  <textarea
-                    value={editFormData.bio || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="Tell us about yourself..."
-                  />
-                </div>
-
-                {/* Avatar URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Avatar URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editFormData.avatar?.url || ''}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        avatar: { ...editFormData.avatar, url: e.target.value, alt: profile?.name || '' },
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="https://example.com/avatar.jpg"
-                  />
-                  {editFormData.avatar?.url && (
-                    <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                      <img
-                        src={editFormData.avatar.url}
-                        alt="Avatar preview"
-                        className="w-20 h-20 rounded-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = '';
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Banner URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Banner URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editFormData.banner?.url || ''}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        banner: { ...editFormData.banner, url: e.target.value, alt: profile?.name ? `${profile.name} banner` : '' },
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="https://example.com/banner.jpg"
-                  />
-                  {editFormData.banner?.url && (
-                    <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                      <img
-                        src={editFormData.banner.url}
-                        alt="Banner preview"
-                        className="w-full h-32 object-cover rounded-md"
-                        onError={(e) => {
-                          e.currentTarget.src = '';
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                    disabled={saving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2 rounded-md text-white ${
-                      profile?.venueManager
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <VenueFormModal
+        isOpen={showEditVenueModal}
+        onClose={() => {
+          setShowEditVenueModal(false);
+          setEditingVenue(null);
+        }}
+        onSubmit={handleUpdateVenue}
+        initialData={editVenueData}
+        title="Edit Venue"
+        submitButtonText="Update Venue"
+        isSubmitting={updatingVenue}
+      />
     </div>
   );
 }

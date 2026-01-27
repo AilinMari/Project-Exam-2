@@ -14,9 +14,6 @@ export default function Navbar() {
     const venueManagerValue = localStorage.getItem('venueManager');
     const venueManager = venueManagerValue === 'true';
     
-    console.log('Navbar - venueManager from localStorage:', venueManagerValue);
-    console.log('Navbar - isVenueManager state:', venueManager);
-    
     setIsLoggedIn(!!token);
     setUserName(name);
     setIsVenueManager(venueManager);

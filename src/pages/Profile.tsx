@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
-import { Profile, Booking, Venue, ApiResponse } from '../types';
+import { Profile, Booking, Venue, ApiResponse, UpdateProfileData } from '../types';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -10,6 +10,13 @@ export default function ProfilePage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState<UpdateProfileData>({
+    bio: '',
+    avatar: { url: '', alt: '' },
+    banner: { url: '', alt: '' },
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -84,6 +91,70 @@ export default function ProfilePage() {
     }
   };
 
+  const handleOpenEditModal = () => {
+    if (profile) {
+      setEditFormData({
+        bio: profile.bio || '',
+        avatar: profile.avatar || { url: '', alt: '' },
+        banner: profile.banner || { url: '', alt: '' },
+      });
+      setShowEditModal(true);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    setSaving(true);
+    try {
+      const userName = localStorage.getItem('userName');
+      if (!userName) return;
+
+      // Prepare update data - only include fields that have values
+      const updateData: UpdateProfileData = {};
+      
+      if (editFormData.bio) {
+        updateData.bio = editFormData.bio;
+      }
+      
+      if (editFormData.avatar?.url) {
+        updateData.avatar = {
+          url: editFormData.avatar.url,
+          alt: editFormData.avatar.alt || profile.name,
+        };
+      }
+      
+      if (editFormData.banner?.url) {
+        updateData.banner = {
+          url: editFormData.banner.url,
+          alt: editFormData.banner.alt || `${profile.name} banner`,
+        };
+      }
+
+      console.log('Updating profile with:', updateData);
+
+      const response = await apiClient.put<ApiResponse<Profile>>(
+        API_ENDPOINTS.updateProfile(userName),
+        updateData,
+        true
+      );
+
+      setProfile(response.data);
+      setShowEditModal(false);
+      alert('Profile updated successfully!');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -126,12 +197,14 @@ export default function ProfilePage() {
                 }`}>
                   Hello,<br />{profile.name}!
                 </h1>
-                <button className={`mt-2 text-white px-4 py-1 rounded text-sm ${
-                  profile.venueManager 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}>
-                  Change Avatar
+                <button 
+                  onClick={handleOpenEditModal}
+                  className={`mt-2 text-white px-4 py-1 rounded text-sm ${
+                    profile.venueManager 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}>
+                  Edit Profile
                 </button>
               </div>
             </div>
@@ -196,7 +269,9 @@ export default function ProfilePage() {
                   </svg>
                   <span className="text-gray-900 font-medium">Manage bookings</span>
                 </button>
-                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center">
+                <button 
+                  onClick={handleOpenEditModal}
+                  className="w-full text-left px-4 py-3 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center">
                   <svg className="w-5 h-5 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -309,6 +384,130 @@ export default function ProfilePage() {
         </div>
       </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Profile</h2>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                {/* Bio */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bio
+                  </label>
+                  <textarea
+                    value={editFormData.bio || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="Tell us about yourself..."
+                  />
+                </div>
+
+                {/* Avatar URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Avatar URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editFormData.avatar?.url || ''}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        avatar: { ...editFormData.avatar, url: e.target.value, alt: profile?.name || '' },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="https://example.com/avatar.jpg"
+                  />
+                  {editFormData.avatar?.url && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                      <img
+                        src={editFormData.avatar.url}
+                        alt="Avatar preview"
+                        className="w-20 h-20 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '';
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Banner URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Banner URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editFormData.banner?.url || ''}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        banner: { ...editFormData.banner, url: e.target.value, alt: profile?.name ? `${profile.name} banner` : '' },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="https://example.com/banner.jpg"
+                  />
+                  {editFormData.banner?.url && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                      <img
+                        src={editFormData.banner.url}
+                        alt="Banner preview"
+                        className="w-full h-32 object-cover rounded-md"
+                        onError={(e) => {
+                          e.currentTarget.src = '';
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 rounded-md text-white ${
+                      profile?.venueManager
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

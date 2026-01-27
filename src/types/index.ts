@@ -134,3 +134,11 @@ export interface UpdateBookingData {
   dateTo?: string;
   guests?: number;
 }
+
+// Update profile request
+export interface UpdateProfileData {
+  bio?: string;
+  avatar?: Media;
+  banner?: Media;
+  venueManager?: boolean;
+}

@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   // Profiles
   profiles: '/holidaze/profiles',
   profileByName: (name: string) => `/holidaze/profiles/${name}`,
+  updateProfile: (name: string) => `/holidaze/profiles/${name}`,
   profileBookings: (name: string) => `/holidaze/profiles/${name}/bookings`,
   profileVenues: (name: string) => `/holidaze/profiles/${name}/venues`,
   searchProfiles: '/holidaze/profiles/search',

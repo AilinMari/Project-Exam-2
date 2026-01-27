@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import { Profile, Booking, Venue, ApiResponse, UpdateProfileData, CreateVenueData } from '../types';
@@ -44,6 +44,34 @@ export default function ProfilePage() {
     },
   });
   const [creatingVenue, setCreatingVenue] = useState(false);
+  
+  // Edit Venue Modal State
+  const [showEditVenueModal, setShowEditVenueModal] = useState(false);
+  const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [editVenueFormData, setEditVenueFormData] = useState<CreateVenueData>({
+    name: '',
+    description: '',
+    price: 0,
+    maxGuests: 1,
+    rating: 0,
+    media: [],
+    meta: {
+      wifi: false,
+      parking: false,
+      breakfast: false,
+      pets: false,
+    },
+    location: {
+      address: '',
+      city: '',
+      zip: '',
+      country: '',
+      continent: '',
+      lat: 0,
+      lng: 0,
+    },
+  });
+  const [updatingVenue, setUpdatingVenue] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -242,6 +270,81 @@ export default function ProfilePage() {
     }
   };
 
+  const handleOpenEditVenueModal = (venue: Venue) => {
+    setEditingVenue(venue);
+    setEditVenueFormData({
+      name: venue.name,
+      description: venue.description,
+      price: venue.price,
+      maxGuests: venue.maxGuests,
+      rating: venue.rating,
+      media: venue.media || [],
+      meta: venue.meta || {
+        wifi: false,
+        parking: false,
+        breakfast: false,
+        pets: false,
+      },
+      location: venue.location || {
+        address: '',
+        city: '',
+        zip: '',
+        country: '',
+        continent: '',
+        lat: 0,
+        lng: 0,
+      },
+    });
+    setShowEditVenueModal(true);
+  };
+
+  const handleCloseEditVenueModal = () => {
+    setShowEditVenueModal(false);
+    setEditingVenue(null);
+  };
+
+  const handleUpdateVenue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVenue) return;
+
+    setUpdatingVenue(true);
+
+    try {
+      const response = await apiClient.put<ApiResponse<Venue>>(
+        API_ENDPOINTS.venueById(editingVenue.id),
+        editVenueFormData,
+        true
+      );
+
+      console.log('Venue updated:', response.data);
+      
+      // Update the venue in the venues list
+      setVenues(venues.map(v => v.id === editingVenue.id ? response.data : v));
+      setShowEditVenueModal(false);
+      alert('Venue updated successfully!');
+      
+      handleCloseEditVenueModal();
+    } catch (err) {
+      console.error('Error updating venue:', err);
+      alert('Failed to update venue. Please try again.');
+    } finally {
+      setUpdatingVenue(false);
+    }
+  };
+
+  const handleDeleteVenue = async (venueId: string) => {
+    if (!confirm('Are you sure you want to delete this venue?')) return;
+
+    try {
+      await apiClient.delete(API_ENDPOINTS.venueById(venueId), true);
+      setVenues(venues.filter(v => v.id !== venueId));
+      alert('Venue deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting venue:', err);
+      alert('Failed to delete venue. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -317,13 +420,24 @@ export default function ProfilePage() {
                   venues.map((venue) => (
                     <div key={venue.id} className="flex items-center justify-between border-b border-gray-200 pb-3 last:border-0">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{venue.name}</p>
+                        <Link 
+                          to={`/venues/${venue.id}`}
+                          className="font-medium text-gray-900 hover:text-red-600"
+                        >
+                          {venue.name}
+                        </Link>
                       </div>
                       <div className="flex gap-2">
-                        <button className="text-sm text-blue-600 hover:text-blue-800">
+                        <button 
+                          onClick={() => handleOpenEditVenueModal(venue)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
                           Edit
                         </button>
-                        <button className="text-sm text-red-600 hover:text-red-800">
+                        <button 
+                          onClick={() => handleDeleteVenue(venue.id)}
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
                           Delete
                         </button>
                       </div>
@@ -739,6 +853,275 @@ export default function ProfilePage() {
                     disabled={creatingVenue}
                   >
                     {creatingVenue ? 'Creating...' : 'Create Venue'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Venue Modal */}
+      {showEditVenueModal && editingVenue && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Venue</h2>
+                <button
+                  onClick={handleCloseEditVenueModal}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateVenue} className="space-y-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Venue Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editVenueFormData.name}
+                      onChange={(e) => setEditVenueFormData({ ...editVenueFormData, name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={editVenueFormData.description}
+                      onChange={(e) => setEditVenueFormData({ ...editVenueFormData, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Price per Night *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={editVenueFormData.price}
+                        onChange={(e) => setEditVenueFormData({ ...editVenueFormData, price: parseFloat(e.target.value) })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Max Guests *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={editVenueFormData.maxGuests}
+                        onChange={(e) => setEditVenueFormData({ ...editVenueFormData, maxGuests: parseInt(e.target.value) })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Image URLs */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Images
+                    </label>
+                    <div className="space-y-3">
+                      {editVenueFormData.media && editVenueFormData.media.length > 0 ? (
+                        editVenueFormData.media.map((image, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="url"
+                              value={image.url}
+                              onChange={(e) => {
+                                const newMedia = [...editVenueFormData.media!];
+                                newMedia[index] = { url: e.target.value, alt: editVenueFormData.name || 'Venue image' };
+                                setEditVenueFormData({ ...editVenueFormData, media: newMedia });
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                              placeholder="https://example.com/venue-image.jpg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newMedia = editVenueFormData.media!.filter((_, i) => i !== index);
+                                setEditVenueFormData({ ...editVenueFormData, media: newMedia });
+                              }}
+                              className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500">No images added yet</div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newMedia = [...(editVenueFormData.media || []), { url: '', alt: editVenueFormData.name || 'Venue image' }];
+                          setEditVenueFormData({ ...editVenueFormData, media: newMedia });
+                        }}
+                        className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600"
+                      >
+                        + Add Image URL
+                      </button>
+                    </div>
+                    
+                    {/* Image Previews */}
+                    {editVenueFormData.media && editVenueFormData.media.some(img => img.url) && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {editVenueFormData.media
+                            .filter(img => img.url)
+                            .map((image, index) => (
+                              <img
+                                key={index}
+                                src={image.url}
+                                alt={`Venue preview ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-md"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Amenities */}
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Amenities</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editVenueFormData.meta?.wifi}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          meta: { ...editVenueFormData.meta!, wifi: e.target.checked }
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700">WiFi</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editVenueFormData.meta?.parking}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          meta: { ...editVenueFormData.meta!, parking: e.target.checked }
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700">Parking</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editVenueFormData.meta?.breakfast}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          meta: { ...editVenueFormData.meta!, breakfast: e.target.checked }
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700">Breakfast</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editVenueFormData.meta?.pets}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          meta: { ...editVenueFormData.meta!, pets: e.target.checked }
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700">Pets Allowed</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Location</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        value={editVenueFormData.location?.city || ''}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          location: { ...editVenueFormData.location!, city: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        value={editVenueFormData.location?.country || ''}
+                        onChange={(e) => setEditVenueFormData({
+                          ...editVenueFormData,
+                          location: { ...editVenueFormData.location!, country: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={handleCloseEditVenueModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    disabled={updatingVenue}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 ${
+                      updatingVenue ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={updatingVenue}
+                  >
+                    {updatingVenue ? 'Updating...' : 'Update Venue'}
                   </button>
                 </div>
               </form>

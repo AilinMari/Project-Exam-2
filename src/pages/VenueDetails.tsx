@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
-import { Venue, ApiResponse } from '../types';
+import { Venue, ApiResponse, CreateVenueData } from '../types';
 
 export default function VenueDetails() {
   const { id } = useParams<{ id: string }>();
@@ -11,19 +11,58 @@ export default function VenueDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     dateFrom: '',
     dateTo: '',
     guests: 1,
   });
+  const [editFormData, setEditFormData] = useState<CreateVenueData>({
+    name: '',
+    description: '',
+    media: [],
+    price: 0,
+    maxGuests: 1,
+    rating: 0,
+    meta: {
+      wifi: false,
+      parking: false,
+      breakfast: false,
+      pets: false,
+    },
+    location: {
+      address: '',
+      city: '',
+      zip: '',
+      country: '',
+      continent: '',
+      lat: 0,
+      lng: 0,
+    },
+  });
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      fetchVenue();
-    }
-  }, [id]);
+    const userName = localStorage.getItem('userName');
+    setCurrentUser(userName);
+  }, []);
 
-  const fetchVenue = async () => {
+  useEffect(() => {
+    if (venue) {
+      setEditFormData({
+        name: venue.name,
+        description: venue.description,
+        media: venue.media || [],
+        price: venue.price,
+        maxGuests: venue.maxGuests,
+        rating: venue.rating || 0,
+        meta: venue.meta,
+        location: venue.location,
+      });
+    }
+  }, [venue]);
+
+  const fetchVenue = useCallback(async () => {
     if (!id) return;
     
     try {
@@ -37,7 +76,13 @@ export default function VenueDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchVenue();
+    }
+  }, [id, fetchVenue]);
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +109,62 @@ export default function VenueDetails() {
       alert(err instanceof Error ? err.message : 'Booking failed');
     }
   };
+
+  const handleUpdateVenue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+
+    try {
+      await apiClient.put(
+        API_ENDPOINTS.venueById(id),
+        editFormData,
+        true
+      );
+      alert('Venue updated successfully!');
+      setShowEditModal(false);
+      fetchVenue();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update venue');
+    }
+  };
+
+  const handleDeleteVenue = async () => {
+    if (!id) return;
+    
+    if (!window.confirm('Are you sure you want to delete this venue? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(API_ENDPOINTS.venueById(id), true);
+      alert('Venue deleted successfully!');
+      navigate('/profile');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete venue');
+    }
+  };
+
+  const addMediaField = () => {
+    setEditFormData({
+      ...editFormData,
+      media: [...(editFormData.media || []), { url: '', alt: '' }],
+    });
+  };
+
+  const removeMediaField = (index: number) => {
+    setEditFormData({
+      ...editFormData,
+      media: (editFormData.media || []).filter((_, i) => i !== index),
+    });
+  };
+
+  const updateMediaField = (index: number, field: 'url' | 'alt', value: string) => {
+    const updatedMedia = [...(editFormData.media || [])];
+    updatedMedia[index] = { ...updatedMedia[index], [field]: value };
+    setEditFormData({ ...editFormData, media: updatedMedia });
+  };
+
+  const isOwner = venue?.owner?.name === currentUser;
 
   if (loading) {
     return (
@@ -135,8 +236,54 @@ export default function VenueDetails() {
             </div>
           </div>
 
+          {/* Host Information */}
+          {venue.owner && (
+            <div className="mb-6 pb-4 border-b">
+              <h2 className="text-sm font-medium text-gray-500 mb-2">Hosted by</h2>
+              <div className="flex items-center gap-3">
+                {venue.owner.avatar?.url ? (
+                  <img
+                    src={venue.owner.avatar.url}
+                    alt={venue.owner.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-gray-600 font-semibold">
+                      {venue.owner.name[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-gray-900">{venue.owner.name}</p>
+                  {venue.owner.bio && (
+                    <p className="text-sm text-gray-600">{venue.owner.bio}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Owner actions */}
+          {isOwner && (
+            <div className="flex gap-3 mb-6">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Edit Venue
+              </button>
+              <button
+                onClick={handleDeleteVenue}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete Venue
+              </button>
+            </div>
+          )}
+
           <div className="border-t border-b py-4 my-4">
-            <h2 className="text-xl font-semibold mb-2">Amenities</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">Amenities</h2>
             <div className="flex flex-wrap gap-3">
               {venue.meta.wifi && (
                 <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded">
@@ -162,40 +309,13 @@ export default function VenueDetails() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">Description</h2>
             <p className="text-gray-700 whitespace-pre-line">
               {venue.description}
             </p>
           </div>
 
-          {venue.owner && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Host</h2>
-              <div className="flex items-center gap-3">
-                {venue.owner.avatar?.url ? (
-                  <img
-                    src={venue.owner.avatar.url}
-                    alt={venue.owner.name}
-                    className="w-12 h-12 rounded-full"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-semibold">
-                      {venue.owner.name[0].toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold">{venue.owner.name}</p>
-                  {venue.owner.bio && (
-                    <p className="text-sm text-gray-600">{venue.owner.bio}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6">
+          <div className="mt-12">
             {!showBookingForm ? (
               <button
                 onClick={() => setShowBookingForm(true)}
@@ -205,7 +325,7 @@ export default function VenueDetails() {
               </button>
             ) : (
               <form onSubmit={handleBooking} className="space-y-4">
-                <h2 className="text-xl font-semibold">Book Your Stay</h2>
+                <h2 className="text-xl font-semibold text-blue-600">Book Your Stay</h2>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -219,7 +339,7 @@ export default function VenueDetails() {
                     onChange={(e) =>
                       setBookingData({ ...bookingData, dateFrom: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -235,7 +355,7 @@ export default function VenueDetails() {
                     onChange={(e) =>
                       setBookingData({ ...bookingData, dateTo: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -252,7 +372,7 @@ export default function VenueDetails() {
                     onChange={(e) =>
                       setBookingData({ ...bookingData, guests: parseInt(e.target.value) })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -276,6 +396,248 @@ export default function VenueDetails() {
           </div>
         </div>
       </div>
+
+      {/* Edit Venue Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">Edit Venue</h2>
+              <form onSubmit={handleUpdateVenue} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Venue Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.name}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={editFormData.description}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, description: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price per Night *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editFormData.price}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, price: parseFloat(e.target.value) })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Maximum Guests *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={editFormData.maxGuests}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, maxGuests: parseInt(e.target.value) })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Images
+                  </label>
+                  {(editFormData.media || []).map((media, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="url"
+                        placeholder="Image URL"
+                        value={media.url}
+                        onChange={(e) => updateMediaField(index, 'url', e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Alt text"
+                        value={media.alt}
+                        onChange={(e) => updateMediaField(index, 'alt', e.target.value)}
+                        className="w-32 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMediaField(index)}
+                        className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addMediaField}
+                    className="mt-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Add Image
+                  </button>
+                  {editFormData.media && editFormData.media.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      {editFormData.media.map((media, index) => (
+                        media.url && (
+                          <div key={index} className="relative">
+                            <img
+                              src={media.url}
+                              alt={media.alt || `Preview ${index + 1}`}
+                              className="w-full h-32 object-cover rounded"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://via.placeholder.com/150?text=Invalid+URL';
+                              }}
+                            />
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amenities
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.meta?.wifi || false}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            meta: { ...editFormData.meta, wifi: e.target.checked },
+                          })
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">WiFi</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.meta?.parking || false}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            meta: { ...editFormData.meta, parking: e.target.checked },
+                          })
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">Parking</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.meta?.breakfast || false}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            meta: { ...editFormData.meta, breakfast: e.target.checked },
+                          })
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">Breakfast</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.meta?.pets || false}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            meta: { ...editFormData.meta, pets: e.target.checked },
+                          })
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">Pets Allowed</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={editFormData.location?.city || ''}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          location: { ...editFormData.location, city: e.target.value },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Country"
+                      value={editFormData.location?.country || ''}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          location: { ...editFormData.location, country: e.target.value },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Update Venue
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

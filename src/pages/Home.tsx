@@ -13,6 +13,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   // Filter states
   const [location, setLocation] = useState('');
@@ -22,6 +23,9 @@ export default function Home() {
 
   useEffect(() => {
     fetchVenues();
+    // Check if user is logged in
+    const token = localStorage.getItem('accessToken');
+    setIsLoggedIn(!!token);
   }, []);
 
   const fetchVenues = async () => {
@@ -143,21 +147,23 @@ export default function Home() {
             onClearFilters={handleClearFilters}
           />
 
-          {/* Register Buttons */}
-          <div className="flex gap-4">
-            <Link
-              to="/register"
-              className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-medium"
-            >
-              Register as a Customer
-            </Link>
-            <Link
-              to="/register"
-              className="bg-orange-600 text-white px-8 py-3 rounded-md hover:bg-orange-700 font-medium"
-            >
-              Register as a Venue Manager
-            </Link>
-          </div>
+          {/* Register Buttons - Only show when not logged in */}
+          {!isLoggedIn && (
+            <div className="flex gap-4">
+              <Link
+                to="/register"
+                className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-medium"
+              >
+                Register as a Customer
+              </Link>
+              <Link
+                to="/register"
+                className="bg-orange-600 text-white px-8 py-3 rounded-md hover:bg-orange-700 font-medium"
+              >
+                Register as a Venue Manager
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

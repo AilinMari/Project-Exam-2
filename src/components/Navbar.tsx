@@ -5,20 +5,30 @@ export default function Navbar() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [isVenueManager, setIsVenueManager] = useState(false);
 
   useEffect(() => {
     // Check auth status whenever location changes
     const token = localStorage.getItem('accessToken');
     const name = localStorage.getItem('userName');
+    const venueManagerValue = localStorage.getItem('venueManager');
+    const venueManager = venueManagerValue === 'true';
+    
+    console.log('Navbar - venueManager from localStorage:', venueManagerValue);
+    console.log('Navbar - isVenueManager state:', venueManager);
+    
     setIsLoggedIn(!!token);
     setUserName(name);
+    setIsVenueManager(venueManager);
   }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userName');
+    localStorage.removeItem('venueManager');
     setIsLoggedIn(false);
     setUserName(null);
+    setIsVenueManager(false);
     window.location.href = '/';
   };
 
@@ -63,13 +73,19 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 {userName && (
-                  <span className="text-red-600 px-3 py-2 text-sm font-semibold">
+                  <span className={`px-3 py-2 text-sm font-semibold ${
+                    isVenueManager ? 'text-red-600' : 'text-blue-600'
+                  }`}>
                     Welcome, {userName}
                   </span>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+                  className={`text-white px-4 py-2 rounded-md text-sm font-medium ${
+                    isVenueManager 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   Logout
                 </button>

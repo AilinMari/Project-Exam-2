@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
-import { RegisterData, AuthResponse } from '../types';
+import { RegisterData, AuthResponse, Profile, ApiResponse } from '../types';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -67,6 +67,21 @@ export default function Register() {
 
       localStorage.setItem('accessToken', loginResponse.data.accessToken);
       localStorage.setItem('userName', loginResponse.data.name);
+
+      // Fetch user profile to get venueManager status
+      try {
+        const profileResponse = await apiClient.get<ApiResponse<Profile>>(
+          `${API_ENDPOINTS.profileByName(loginResponse.data.name)}`,
+          true
+        );
+        const isVenueManager = profileResponse.data?.venueManager || false;
+        localStorage.setItem('venueManager', isVenueManager ? 'true' : 'false');
+      } catch (profileErr) {
+        console.error('Could not fetch profile:', profileErr);
+        // Use the registration form value as fallback
+        localStorage.setItem('venueManager', formData.venueManager ? 'true' : 'false');
+      }
+
       navigate('/profile');
     } catch (err) {
       console.error('Registration error:', err);

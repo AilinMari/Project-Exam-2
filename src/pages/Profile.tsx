@@ -103,7 +103,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Banner */}
-      <div className="bg-red-500 py-12">
+      <div className={`py-12 ${profile.venueManager ? 'bg-red-500' : 'bg-blue-600'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-md p-6 inline-block">
             <div className="flex items-center gap-4">
@@ -121,10 +121,16 @@ export default function ProfilePage() {
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className={`text-2xl font-bold ${
+                  profile.venueManager ? 'text-red-600' : 'text-blue-600'
+                }`}>
                   Hello,<br />{profile.name}!
                 </h1>
-                <button className="mt-2 bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700">
+                <button className={`mt-2 text-white px-4 py-1 rounded text-sm ${
+                  profile.venueManager 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}>
                   Change Avatar
                 </button>
               </div>
@@ -164,7 +170,7 @@ export default function ProfilePage() {
                     </div>
                   ))
                 )}
-                <button className="w-full text-left text-blue-600 hover:text-blue-800 font-medium text-sm mt-4">
+                <button className="w-full text-left text-red-600 hover:text-red-800 font-medium text-sm mt-4">
                   + Add New Venue
                 </button>
               </div>
@@ -252,7 +258,7 @@ export default function ProfilePage() {
                             {new Date(booking.dateFrom).toLocaleDateString()} - {new Date(booking.dateTo).toLocaleDateString()}
                           </p>
                         </div>
-                        <button className="text-sm bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">
+                        <button className="text-sm bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700">
                           View Details
                         </button>
                       </div>
@@ -266,7 +272,9 @@ export default function ProfilePage() {
 
         {/* Right Column - Calendar */}
         <div className="bg-white rounded-lg shadow-md">
-          <div className="bg-blue-50 px-6 py-3 border-b">
+          <div className={`px-6 py-3 border-b ${
+            profile.venueManager ? 'bg-red-50' : 'bg-blue-50'
+          }`}>
             <h2 className="text-lg font-semibold text-gray-900">Calendar</h2>
           </div>
           <div className="p-6">
@@ -288,7 +296,7 @@ export default function ProfilePage() {
                       day < 1 || day > 31
                         ? 'text-gray-300'
                         : isToday
-                        ? 'bg-blue-600 text-white font-bold'
+                        ? `${profile.venueManager ? 'bg-red-600' : 'bg-blue-600'} text-white font-bold`
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >

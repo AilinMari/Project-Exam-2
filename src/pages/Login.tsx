@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
-import { LoginCredentials, AuthResponse } from '../types';
+import { LoginCredentials, AuthResponse, Profile, ApiResponse } from '../types';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,8 +28,26 @@ export default function Login() {
 
       console.log('Login successful:', response);
 
+      // Store access token and username first
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('userName', response.data.name);
+
+      // Fetch user profile to get venueManager status
+      try {
+        const profileResponse = await apiClient.get<ApiResponse<Profile>>(
+          `${API_ENDPOINTS.profileByName(response.data.name)}`,
+          true
+        );
+        console.log('Profile data:', profileResponse);
+        const isVenueManager = profileResponse.data?.venueManager || false;
+        localStorage.setItem('venueManager', isVenueManager ? 'true' : 'false');
+        console.log('Stored venueManager:', isVenueManager);
+      } catch (profileErr) {
+        console.error('Could not fetch profile:', profileErr);
+        // Default to false if profile fetch fails
+        localStorage.setItem('venueManager', 'false');
+      }
+      
       navigate('/profile');
     } catch (err) {
       console.error('Login error:', err);

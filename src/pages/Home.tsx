@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import { Venue, ApiResponse } from '../types';
+import SearchBar from '../components/SearchBar';
+import FeaturedVenuesCarousel from '../components/FeaturedVenuesCarousel';
 
 export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -117,64 +119,21 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/20" />
         
         {/* Search Bar Overlay */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
-          <form onSubmit={handleSearch} className="w-full max-w-4xl bg-white rounded-lg shadow-lg mb-8">
-            <div className="flex flex-col md:flex-row">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for a venue.."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-s-md text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
-              />
-              
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Location"
-                className="w-full md:w-40 px-4 py-3 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
-              />
-              
-              <input
-                type="number"
-                value={guests}
-                onChange={(e) => setGuests(e.target.value ? parseInt(e.target.value) : '')}
-                placeholder="Guests"
-                min="1"
-                className="w-full md:w-32 px-4 py-3 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
-              />
-              
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                placeholder="Check in"
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full md:w-40 px-4 py-3 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-              />
-              
-              <button
-                type="submit"
-                className=" text-gray-300 px-6 py-3 rounded-e-md hover:bg-blue-700 font-medium flex items-center justify-center"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Clear filters button */}
-            {(searchQuery || location || guests || dateFrom || dateTo) && (
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="mt-3 text-sm text-gray-600 hover:text-gray-800 underline"
-              >
-                Clear all filters
-              </button>
-            )}
-          </form>
+        <div className="relative z-10 flex flex-col items-center py-16 h-full px-4">
+          <SearchBar
+            searchQuery={searchQuery}
+            location={location}
+            guests={guests}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onSearchQueryChange={setSearchQuery}
+            onLocationChange={setLocation}
+            onGuestsChange={setGuests}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onSubmit={handleSearch}
+            onClearFilters={handleClearFilters}
+          />
 
           {/* Register Buttons */}
           <div className="flex gap-4">
@@ -195,94 +154,7 @@ export default function Home() {
       </div>
 
       {/* Featured Venues Carousel */}
-      {featuredVenues.length > 0 && (
-        <div className="relative -mt-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 z-20">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Featured Venues</h2>
-          <div className="relative">
-            {/* Previous Arrow */}
-            <button
-              onClick={() => {
-                const container = document.getElementById('carousel-container');
-                if (container) {
-                  container.scrollBy({ left: -320, behavior: 'smooth' });
-                }
-              }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white hover:bg-gray-100 text-gray-800 rounded-full p-3 shadow-lg transition-all"
-              aria-label="Previous venues"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Carousel Container */}
-            <div id="carousel-container" className="overflow-x-auto scrollbar-hide scroll-smooth">
-              <div className="flex gap-6 pb-4">
-                {featuredVenues.map((venue) => (
-                  <Link
-                    key={venue.id}
-                    to={`/venue/${venue.id}`}
-                    className="min-w-[300px] bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow flex-shrink-0"
-                  >
-                    <div className="h-48 bg-gray-200 relative">
-                      {venue.media?.[0]?.url ? (
-                        <img
-                          src={venue.media[0].url}
-                          alt={venue.media[0].alt || venue.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          No image available
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                        <h3 className="text-white font-bold text-lg">{venue.name}</h3>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Next Arrow */}
-            <button
-              onClick={() => {
-                const container = document.getElementById('carousel-container');
-                if (container) {
-                  container.scrollBy({ left: 320, behavior: 'smooth' });
-                }
-              }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white hover:bg-gray-100 text-gray-800 rounded-full p-3 shadow-lg transition-all"
-              aria-label="Next venues"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      <FeaturedVenuesCarousel venues={featuredVenues} />
 
       {/* Search Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,11 +1,24 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
-  const isLoggedIn = localStorage.getItem('accessToken');
+  const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check auth status whenever location changes
+    const token = localStorage.getItem('accessToken');
+    const name = localStorage.getItem('userName');
+    setIsLoggedIn(!!token);
+    setUserName(name);
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userName');
+    setIsLoggedIn(false);
+    setUserName(null);
     window.location.href = '/';
   };
 
@@ -33,6 +46,13 @@ export default function Navbar() {
             >
               Home
             </Link>
+
+            <Link
+              to="/"
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Venues
+            </Link>
             
             {isLoggedIn ? (
               <>
@@ -40,8 +60,13 @@ export default function Navbar() {
                   to="/profile"
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Profile
+                  Dashboard
                 </Link>
+                {userName && (
+                  <span className="text-red-600 px-3 py-2 text-sm font-semibold">
+                    Welcome, {userName}
+                  </span>
+                )}
                 <button
                   onClick={handleLogout}
                   className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
@@ -55,13 +80,13 @@ export default function Navbar() {
                   to="/login"
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Login
+                  Log in
                 </Link>
                 <Link
                   to="/register"
                   className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
                 >
-                  Register
+                  Sign up
                 </Link>
               </>
             )}

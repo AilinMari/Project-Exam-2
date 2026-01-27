@@ -24,5 +24,10 @@ export const API_ENDPOINTS = {
   searchProfiles: '/holidaze/profiles/search',
 } as const;
 
-// API Key (you'll need to get this from Noroff)
-export const API_KEY = 'YOUR_API_KEY_HERE';
+// API Key - You need to create an API key
+// 1. Register/Login at https://v2.api.noroff.dev
+// 2. Go to https://v2.api.noroff.dev/auth/create-api-key
+// 3. Replace the value below with your API key
+export const API_KEY = '3b4ae846-f7ea-4cc9-9520-37a13084592a';
+
+

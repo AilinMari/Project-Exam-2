@@ -27,9 +27,16 @@ export default function Home() {
   const fetchVenues = async () => {
     try {
       setLoading(true);
+      // Fetch venues sorted by creation date (newest first)
       const response = await apiClient.get<ApiResponse<Venue[]>>(
-        API_ENDPOINTS.venues
+        `${API_ENDPOINTS.venues}?sort=created&sortOrder=desc`
       );
+      
+      console.log('Fetched venues:', response.data);
+      console.log('Total venues fetched:', response.data.length);
+      console.log('First venue (newest):', response.data[0]);
+      console.log('Last venue (oldest):', response.data[response.data.length - 1]);
+      
       setVenues(response.data);
       setFilteredVenues(response.data);
       
@@ -39,6 +46,7 @@ export default function Home() {
         .slice(0, 5);
       setFeaturedVenues(sortedByRating);
     } catch (err) {
+      console.error('Error fetching venues:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch venues');
     } finally {
       setLoading(false);
@@ -180,7 +188,7 @@ export default function Home() {
             {filteredVenues.map((venue) => (
             <Link
               key={venue.id}
-              to={`/venue/${venue.id}`}
+              to={`/venues/${venue.id}`}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
             >
               <div className="h-48 bg-gray-200">

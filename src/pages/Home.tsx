@@ -152,12 +152,14 @@ export default function Home() {
             <div className="flex gap-4">
               <Link
                 to="/register"
+                state={{ tab: 'customer' }}
                 className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-medium"
               >
                 Register as a Customer
               </Link>
               <Link
                 to="/register"
+                state={{ tab: 'manager' }}
                 className="bg-orange-600 text-white px-8 py-3 rounded-md hover:bg-orange-700 font-medium"
               >
                 Register as a Venue Manager

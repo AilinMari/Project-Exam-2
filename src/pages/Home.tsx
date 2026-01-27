@@ -110,7 +110,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Header Image with Search Overlay */}
-      <div className="relative h-[500px] bg-cover bg-center mb-8" 
+      <div className="relative h-[500px] bg-cover bg-center" 
            style={{ 
              backgroundImage: 'url(/Images/hero.png)'
            }}>
@@ -196,7 +196,7 @@ export default function Home() {
 
       {/* Featured Venues Carousel */}
       {featuredVenues.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+        <div className="relative -mt-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 z-20">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Featured Venues</h2>
           <div className="relative">
             {/* Previous Arrow */}

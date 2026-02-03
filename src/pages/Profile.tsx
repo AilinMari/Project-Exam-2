@@ -6,7 +6,10 @@ import { Profile, Booking, Venue, ApiResponse, UpdateProfileData, CreateVenueDat
 import EditProfileModal from '../components/modals/EditProfileModal';
 import VenueFormModal from '../components/modals/VenueFormModal';
 import VenueList from '../components/venue/VenueList';
-import BookingCalendar from '../components/booking/BookingCalendar';
+import ProfileHeader from '../components/profile/ProfileHeader';
+import CustomerBookingsSection from '../components/profile/CustomerBookingsSection';
+import VenueBookingsSection from '../components/profile/VenueBookingsSection';
+import ProfileCalendarSection from '../components/profile/ProfileCalendarSection';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -251,232 +254,57 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Banner */}
-      <div className={`py-12 ${profile.venueManager ? 'bg-red-500' : 'bg-blue-600'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-md p-6 inline-block">
-            <div className="flex items-center gap-4">
-              {profile.avatar?.url ? (
-                <img
-                  src={profile.avatar.url}
-                  alt={profile.name}
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-600">
-                    {profile.name[0].toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className={`text-2xl font-bold ${
-                  profile.venueManager ? 'text-red-600' : 'text-blue-600'
-                }`}>
-                  Hello,<br />{profile.name}!
-                </h1>
-                <button 
-                  onClick={() => setShowEditModal(true)}
-                  className={`mt-2 text-white px-4 py-1 rounded text-sm ${
-                    profile.venueManager 
-                      ? 'bg-red-600 hover:bg-red-700' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}>
-                  Edit Profile
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProfileHeader 
+        profile={profile} 
+        onEditClick={() => setShowEditModal(true)} 
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Side (1/3 width) */}
           <div className="lg:col-span-1 space-y-6">
-            {/* My Bookings / Venue Bookings */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className={`text-2xl font-bold mb-4 ${
-                profile.venueManager ? 'text-red-600' : 'text-blue-600'
-              }`}>
-                {profile.venueManager ? 'Venue Bookings' : 'My Bookings'}
-              </h2>
-              {profile.venueManager ? (
-                // Show venue bookings for managers
-                (() => {
-                  const venueBookings: Booking[] = venues.flatMap(venue => 
-                    (venue.bookings || []).map(booking => ({
-                      ...booking,
-                      venue: venue
-                    }))
-                  );
-                  
-                  return venueBookings.length === 0 ? (
-                    <p className="text-gray-600">No bookings on your venues yet.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {venueBookings.map((booking) => (
-                        <div 
-                          key={booking.id} 
-                          className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="text-gray-900 font-medium">
-                              {booking.venue?.name || 'Venue'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {booking.customer?.name || 'Customer'} • {booking.guests} guest{booking.guests > 1 ? 's' : ''}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => navigate(`/venues/${booking.venue?.id}`)}
-                            className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
-                            title="View venue"
-                          >
-                            View
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()
-              ) : (
-                // Show personal bookings for customers
-                bookings.length === 0 ? (
-                  <p className="text-gray-600">No bookings yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {bookings.map((booking) => (
-                      <div 
-                        key={booking.id} 
-                        className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded transition-colors"
-                      >
-                        <span className="text-gray-900 font-medium flex-1">
-                          {booking.venue?.name || 'Venue'}
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => navigate(`/venues/${booking.venue?.id}`)}
-                            className="text-xs px-2 py-1 rounded text-blue-600 hover:bg-blue-50"
-                            title="View venue"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBooking(booking.id)}
-                            className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
-                            title="Delete booking"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* My Venues (Only for Venue Managers) */}
-            {profile.venueManager && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-red-600">
-                    My Venues
-                  </h2>
-                  <button
-                    onClick={() => setShowCreateVenueModal(true)}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                  >
-                    + Create Venue
-                  </button>
-                </div>
-                <VenueList
-                  venues={venues}
-                  onEdit={handleEditVenue}
-                  onDelete={handleDeleteVenue}
-                />
-              </div>
-            )}
-
-            {/* Upcoming Booking (Only for Customers) */}
-            {!profile.venueManager && bookings.length > 0 && (() => {
-              const upcomingBooking = bookings
-                .filter(b => new Date(b.dateFrom) >= new Date())
-                .sort((a, b) => new Date(a.dateFrom).getTime() - new Date(b.dateFrom).getTime())[0];
-              
-              return upcomingBooking ? (
+            {profile.venueManager ? (
+              /* Venue Manager: Show venue bookings and venues */
+              <>
+                <VenueBookingsSection venues={venues} />
+                {/* My Venues */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className={`text-lg font-bold mb-4 ${
-                    profile.venueManager ? 'text-red-600' : 'text-blue-600'
-                  }`}>
-                    Upcoming Booking
-                  </h2>
-                  <div className="space-y-3">
-                    {upcomingBooking.venue?.media?.[0]?.url && (
-                      <img
-                        src={upcomingBooking.venue.media[0].url}
-                        alt={upcomingBooking.venue.name}
-                        className="w-full h-48 rounded-lg object-cover"
-                      />
-                    )}
-                    <div>
-                      <h3 className={`font-bold text-lg ${
-                        profile.venueManager ? 'text-red-600' : 'text-blue-600'
-                      }`}>
-                        {upcomingBooking.venue?.name || 'Venue'}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {new Date(upcomingBooking.dateFrom).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })} - {new Date(upcomingBooking.dateTo).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => navigate(`/venues/${upcomingBooking.venue?.id}`)}
-                      className={`w-full py-2 px-4 rounded text-white ${
-                        profile.venueManager 
-                          ? 'bg-red-600 hover:bg-red-700' 
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-red-600">
+                      My Venues
+                    </h2>
+                    <button
+                      onClick={() => setShowCreateVenueModal(true)}
+                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                     >
-                      View Details
+                      + Create Venue
                     </button>
                   </div>
+                  <VenueList
+                    venues={venues}
+                    onEdit={handleEditVenue}
+                    onDelete={handleDeleteVenue}
+                  />
                 </div>
-              ) : null;
-            })()}
+              </>
+            ) : (
+              /* Customer: Show personal bookings */
+              <CustomerBookingsSection 
+                bookings={bookings}
+                isManager={profile.venueManager ?? false}
+                onDeleteBooking={handleDeleteBooking}
+              />
+            )}
           </div>
 
           {/* Calendar - Right Side (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Calendar */}
-            {(() => {
-              // For managers, show venue bookings; for customers, show their bookings
-              const calendarBookings: Booking[] = profile.venueManager 
-                ? venues.flatMap(venue => 
-                    (venue.bookings || []).map(booking => ({
-                      ...booking,
-                      venue: venue
-                    }))
-                  )
-                : bookings;
-              
-              return calendarBookings.length > 0 && (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${
-                    profile.venueManager ? 'text-red-600' : 'text-blue-600'
-                  }`}>
-                    Calendar
-                  </h2>
-                  <BookingCalendar bookings={calendarBookings} />
-                </div>
-              );
-            })()}
+            <ProfileCalendarSection 
+              bookings={bookings}
+              venues={venues}
+              isManager={profile.venueManager ?? false}
+            />
           </div>
         </div>
       </div>

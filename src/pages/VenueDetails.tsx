@@ -6,6 +6,7 @@ import { Venue, ApiResponse, CreateVenueData } from '../types';
 import ImageCarousel from '../components/venue/ImageCarousel';
 import BookingForm from '../components/venue/BookingForm';
 import VenueFormModal from '../components/modals/VenueFormModal';
+import BookingCalendar from '../components/booking/BookingCalendar';
 
 export default function VenueDetails() {
   const { id } = useParams<{ id: string }>();
@@ -251,6 +252,14 @@ export default function VenueDetails() {
               {venue.description}
             </p>
           </div>
+
+          {/* Booking Calendar */}
+          {venue.bookings && venue.bookings.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">Availability</h2>
+              <BookingCalendar bookings={venue.bookings} />
+            </div>
+          )}
 
           <div className="mt-12">
             {!showBookingForm ? (

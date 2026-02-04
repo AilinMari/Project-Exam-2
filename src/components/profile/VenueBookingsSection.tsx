@@ -36,6 +36,17 @@ export default function VenueBookingsSection({ venues }: VenueBookingsSectionPro
                 <div className="text-xs text-gray-500">
                   {booking.customer?.name || 'Customer'} • {booking.guests} guest{booking.guests > 1 ? 's' : ''}
                 </div>
+                <div className="text-xs text-gray-400 mt-0.5">
+                  {new Date(booking.dateFrom).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })} - {new Date(booking.dateTo).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </div>
               </div>
               <button
                 onClick={() => navigate(`/venues/${booking.venue?.id}`)}

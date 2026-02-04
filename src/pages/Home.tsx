@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { Venue, ApiResponse } from '../types';
 import SearchBar from '../components/SearchBar';
 import FeaturedVenuesCarousel from '../components/FeaturedVenuesCarousel';
+import VenueCard from '../components/venue/VenueCard';
 
 export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -13,6 +14,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   // Filter states
   const [location, setLocation] = useState('');
@@ -22,14 +24,24 @@ export default function Home() {
 
   useEffect(() => {
     fetchVenues();
+    // Check if user is logged in
+    const token = localStorage.getItem('accessToken');
+    setIsLoggedIn(!!token);
   }, []);
 
   const fetchVenues = async () => {
     try {
       setLoading(true);
+      // Fetch venues sorted by creation date (newest first)
       const response = await apiClient.get<ApiResponse<Venue[]>>(
-        API_ENDPOINTS.venues
+        `${API_ENDPOINTS.venues}?sort=created&sortOrder=desc`
       );
+      
+      console.log('Fetched venues:', response.data);
+      console.log('Total venues fetched:', response.data.length);
+      console.log('First venue (newest):', response.data[0]);
+      console.log('Last venue (oldest):', response.data[response.data.length - 1]);
+      
       setVenues(response.data);
       setFilteredVenues(response.data);
       
@@ -39,6 +51,7 @@ export default function Home() {
         .slice(0, 5);
       setFeaturedVenues(sortedByRating);
     } catch (err) {
+      console.error('Error fetching venues:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch venues');
     } finally {
       setLoading(false);
@@ -135,21 +148,25 @@ export default function Home() {
             onClearFilters={handleClearFilters}
           />
 
-          {/* Register Buttons */}
-          <div className="flex gap-4">
-            <Link
-              to="/register"
-              className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-medium"
-            >
-              Register as a Customer
-            </Link>
-            <Link
-              to="/register"
-              className="bg-orange-600 text-white px-8 py-3 rounded-md hover:bg-orange-700 font-medium"
-            >
-              Register as a Venue Manager
-            </Link>
-          </div>
+          {/* Register Buttons - Only show when not logged in */}
+          {!isLoggedIn && (
+            <div className="flex gap-4">
+              <Link
+                to="/register"
+                state={{ tab: 'customer' }}
+                className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-medium"
+              >
+                Register as a Customer
+              </Link>
+              <Link
+                to="/register"
+                state={{ tab: 'manager' }}
+                className="bg-orange-600 text-white px-8 py-3 rounded-md hover:bg-orange-700 font-medium"
+              >
+                Register as a Venue Manager
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -178,67 +195,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVenues.map((venue) => (
-            <Link
-              key={venue.id}
-              to={`/venue/${venue.id}`}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
-            >
-              <div className="h-48 bg-gray-200">
-                {venue.media?.[0]?.url ? (
-                  <img
-                    src={venue.media[0].url}
-                    alt={venue.media[0].alt || venue.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    No image available
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {venue.name}
-                </h2>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                  {venue.description}
-                </p>
-                
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-2xl font-bold text-blue-600">
-                    ${venue.price}
-                    <span className="text-sm text-gray-600">/night</span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Max {venue.maxGuests} guests
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-3 text-xs">
-                  {venue.meta.wifi && (
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      WiFi
-                    </span>
-                  )}
-                  {venue.meta.parking && (
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                      Parking
-                    </span>
-                  )}
-                  {venue.meta.breakfast && (
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      Breakfast
-                    </span>
-                  )}
-                  {venue.meta.pets && (
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                      Pets
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Link>
+              <VenueCard key={venue.id} venue={venue} />
             ))}
           </div>
         )}

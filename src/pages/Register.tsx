@@ -1,26 +1,32 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import { RegisterData, AuthResponse, Profile, ApiResponse } from '../types';
 
 export default function Register() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'customer' | 'manager'>('customer');
+  const location = useLocation();
+  const initialTab = (location.state as { tab?: 'customer' | 'manager' })?.tab || 'customer';
+  const [activeTab, setActiveTab] = useState<'customer' | 'manager'>(initialTab);
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     email: '',
     password: '',
     bio: '',
     avatar: { url: '', alt: '' },
-    venueManager: false,
+    venueManager: initialTab === 'manager',
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Update venueManager when tab changes
+    setFormData(prev => ({ ...prev, venueManager: activeTab === 'manager' }));
+  }, [activeTab]);
+
   const handleTabChange = (tab: 'customer' | 'manager') => {
     setActiveTab(tab);
-    setFormData({ ...formData, venueManager: tab === 'manager' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

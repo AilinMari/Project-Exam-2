@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
-import { Venue, ApiResponse } from '../types';
+import { Venue, ApiResponse, CreateVenueData } from '../types';
+import ImageCarousel from '../components/venue/ImageCarousel';
+import BookingForm from '../components/venue/BookingForm';
+import VenueFormModal from '../components/modals/VenueFormModal';
+import BookingCalendar from '../components/booking/BookingCalendar';
 
 export default function VenueDetails() {
   const { id } = useParams<{ id: string }>();
@@ -11,19 +15,22 @@ export default function VenueDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [bookingData, setBookingData] = useState({
-    dateFrom: '',
-    dateTo: '',
-    guests: 1,
-  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [updatingVenue, setUpdatingVenue] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isVenueManager, setIsVenueManager] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      fetchVenue();
-    }
-  }, [id]);
+    const userName = localStorage.getItem('userName');
+    const token = localStorage.getItem('accessToken');
+    const venueManager = localStorage.getItem('venueManager') === 'true';
+    setCurrentUser(userName);
+    setIsLoggedIn(!!token);
+    setIsVenueManager(venueManager);
+  }, []);
 
-  const fetchVenue = async () => {
+  const fetchVenue = useCallback(async () => {
     if (!id) return;
     
     try {
@@ -37,11 +44,15 @@ export default function VenueDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  useEffect(() => {
+    if (id) {
+      fetchVenue();
+    }
+  }, [id, fetchVenue]);
+
+  const handleBooking = async (bookingData: { dateFrom: string; dateTo: string; guests: number }) => {
     if (!localStorage.getItem('accessToken')) {
       alert('Please login to make a booking');
       navigate('/login');
@@ -65,6 +76,45 @@ export default function VenueDetails() {
     }
   };
 
+  const handleUpdateVenue = async (formData: CreateVenueData) => {
+    if (!id) return;
+
+    setUpdatingVenue(true);
+    try {
+      await apiClient.put(
+        API_ENDPOINTS.venueById(id),
+        formData,
+        true
+      );
+      alert('Venue updated successfully!');
+      setShowEditModal(false);
+      fetchVenue();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update venue');
+      throw err;
+    } finally {
+      setUpdatingVenue(false);
+    }
+  };
+
+  const handleDeleteVenue = async () => {
+    if (!id) return;
+    
+    if (!window.confirm('Are you sure you want to delete this venue? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(API_ENDPOINTS.venueById(id), true);
+      alert('Venue deleted successfully!');
+      navigate('/profile');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete venue');
+    }
+  };
+
+  const isOwner = venue?.owner?.name === currentUser;
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -83,6 +133,17 @@ export default function VenueDetails() {
     );
   }
 
+  const editFormData: CreateVenueData = {
+    name: venue.name,
+    description: venue.description,
+    media: venue.media || [],
+    price: venue.price,
+    maxGuests: venue.maxGuests,
+    rating: venue.rating || 0,
+    meta: venue.meta,
+    location: venue.location,
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <button
@@ -93,27 +154,11 @@ export default function VenueDetails() {
       </button>
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Image Gallery */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2">
-          {venue.media && venue.media.length > 0 ? (
-            venue.media.slice(0, 4).map((image, index) => (
-              <div key={index} className="h-64 bg-gray-200">
-                <img
-                  src={image.url}
-                  alt={image.alt || `${venue.name} ${index + 1}`}
-                  className="w-full h-full object-cover rounded"
-                />
-              </div>
-            ))
-          ) : (
-            <div className="h-64 bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No images available</span>
-            </div>
-          )}
-        </div>
+        {/* Image Carousel */}
+        <ImageCarousel images={venue.media || []} venueName={venue.name} />
 
         <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {venue.name}
@@ -135,68 +180,119 @@ export default function VenueDetails() {
             </div>
           </div>
 
-          <div className="border-t border-b py-4 my-4">
-            <h2 className="text-xl font-semibold mb-2">Amenities</h2>
-            <div className="flex flex-wrap gap-3">
-              {venue.meta.wifi && (
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded">
-                  WiFi
-                </span>
-              )}
-              {venue.meta.parking && (
-                <span className="bg-green-100 text-green-800 px-3 py-1 rounded">
-                  Parking
-                </span>
-              )}
-              {venue.meta.breakfast && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded">
-                  Breakfast
-                </span>
-              )}
-              {venue.meta.pets && (
-                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded">
-                  Pets Allowed
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
-            <p className="text-gray-700 whitespace-pre-line">
-              {venue.description}
-            </p>
-          </div>
-
-          {venue.owner && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Host</h2>
-              <div className="flex items-center gap-3">
-                {venue.owner.avatar?.url ? (
-                  <img
-                    src={venue.owner.avatar.url}
-                    alt={venue.owner.name}
-                    className="w-12 h-12 rounded-full"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-semibold">
-                      {venue.owner.name[0].toUpperCase()}
+          {/* Content & Calendar Section - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Left: Venue Information */}
+            <div className="space-y-6">
+              {/* Amenities */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Amenities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {venue.meta.wifi && (
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm">
+                      WiFi
                     </span>
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold">{venue.owner.name}</p>
-                  {venue.owner.bio && (
-                    <p className="text-sm text-gray-600">{venue.owner.bio}</p>
+                  )}
+                  {venue.meta.parking && (
+                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm">
+                      Parking
+                    </span>
+                  )}
+                  {venue.meta.breakfast && (
+                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm">
+                      Breakfast
+                    </span>
+                  )}
+                  {venue.meta.pets && (
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded text-sm">
+                      Pets Allowed
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          <div className="mt-6">
-            {!showBookingForm ? (
+              {/* Host Information */}
+              {venue.owner && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <h2 className="text-sm font-medium text-gray-500 mb-2">Hosted by</h2>
+                  <div className="flex items-center gap-3">
+                    {venue.owner.avatar?.url ? (
+                      <img
+                        src={venue.owner.avatar.url}
+                        alt={venue.owner.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 font-semibold">
+                          {venue.owner.name[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-gray-900">{venue.owner.name}</p>
+                      {venue.owner.bio && (
+                        <p className="text-sm text-gray-600">{venue.owner.bio}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Owner actions */}
+              {isOwner && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Edit Venue
+                  </button>
+                  <button
+                    onClick={handleDeleteVenue}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Delete Venue
+                  </button>
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Description</h2>
+                <p className="text-gray-700 whitespace-pre-line text-sm">
+                  {venue.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Availability Calendar */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900">Availability</h3>
+              <BookingCalendar bookings={venue.bookings || []} />
+            </div>
+          </div>
+
+          {/* Booking Section - Full Width */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            {!isLoggedIn ? (
+              // Not logged in - show login prompt
+              <div className="text-center py-4">
+                <p className="text-gray-700 mb-3">Please log in to make a booking</p>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-semibold"
+                >
+                  Log In
+                </button>
+              </div>
+            ) : isVenueManager ? (
+              // Logged in as venue manager - show info message
+              <div className="text-center py-4">
+                <p className="text-gray-700">Venue managers cannot make bookings.</p>
+              </div>
+            ) : !showBookingForm ? (
+              // Logged in as customer - show booking button
               <button
                 onClick={() => setShowBookingForm(true)}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 text-lg font-semibold"
@@ -204,78 +300,27 @@ export default function VenueDetails() {
                 Book Now
               </button>
             ) : (
-              <form onSubmit={handleBooking} className="space-y-4">
-                <h2 className="text-xl font-semibold">Book Your Stay</h2>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Check-in Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    min={new Date().toISOString().split('T')[0]}
-                    value={bookingData.dateFrom}
-                    onChange={(e) =>
-                      setBookingData({ ...bookingData, dateFrom: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Check-out Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    min={bookingData.dateFrom || new Date().toISOString().split('T')[0]}
-                    value={bookingData.dateTo}
-                    onChange={(e) =>
-                      setBookingData({ ...bookingData, dateTo: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Guests
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    max={venue.maxGuests}
-                    value={bookingData.guests}
-                    onChange={(e) =>
-                      setBookingData({ ...bookingData, guests: parseInt(e.target.value) })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
-                  >
-                    Confirm Booking
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowBookingForm(false)}
-                    className="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+              // Show booking form
+              <BookingForm
+                maxGuests={venue.maxGuests}
+                onSubmit={handleBooking}
+                onCancel={() => setShowBookingForm(false)}
+              />
             )}
           </div>
         </div>
       </div>
+
+      {/* Edit Venue Modal */}
+      <VenueFormModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateVenue}
+        initialData={editFormData}
+        title="Edit Venue"
+        submitButtonText="Update Venue"
+        isSubmitting={updatingVenue}
+      />
     </div>
   );
 }

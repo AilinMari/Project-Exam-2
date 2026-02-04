@@ -18,10 +18,16 @@ export default function VenueDetails() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [updatingVenue, setUpdatingVenue] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isVenueManager, setIsVenueManager] = useState(false);
 
   useEffect(() => {
     const userName = localStorage.getItem('userName');
+    const token = localStorage.getItem('accessToken');
+    const venueManager = localStorage.getItem('venueManager') === 'true';
     setCurrentUser(userName);
+    setIsLoggedIn(!!token);
+    setIsVenueManager(venueManager);
   }, []);
 
   const fetchVenue = useCallback(async () => {
@@ -152,7 +158,7 @@ export default function VenueDetails() {
         <ImageCarousel images={venue.media || []} venueName={venue.name} />
 
         <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {venue.name}
@@ -174,95 +180,119 @@ export default function VenueDetails() {
             </div>
           </div>
 
-          {/* Host Information */}
-          {venue.owner && (
-            <div className="mb-6 pb-4 border-b">
-              <h2 className="text-sm font-medium text-gray-500 mb-2">Hosted by</h2>
-              <div className="flex items-center gap-3">
-                {venue.owner.avatar?.url ? (
-                  <img
-                    src={venue.owner.avatar.url}
-                    alt={venue.owner.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-semibold">
-                      {venue.owner.name[0].toUpperCase()}
+          {/* Content & Calendar Section - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Left: Venue Information */}
+            <div className="space-y-6">
+              {/* Amenities */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Amenities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {venue.meta.wifi && (
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm">
+                      WiFi
                     </span>
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold text-gray-900">{venue.owner.name}</p>
-                  {venue.owner.bio && (
-                    <p className="text-sm text-gray-600">{venue.owner.bio}</p>
+                  )}
+                  {venue.meta.parking && (
+                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm">
+                      Parking
+                    </span>
+                  )}
+                  {venue.meta.breakfast && (
+                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm">
+                      Breakfast
+                    </span>
+                  )}
+                  {venue.meta.pets && (
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded text-sm">
+                      Pets Allowed
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Owner actions */}
-          {isOwner && (
-            <div className="flex gap-3 mb-6">
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Edit Venue
-              </button>
-              <button
-                onClick={handleDeleteVenue}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Delete Venue
-              </button>
-            </div>
-          )}
+              {/* Host Information */}
+              {venue.owner && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <h2 className="text-sm font-medium text-gray-500 mb-2">Hosted by</h2>
+                  <div className="flex items-center gap-3">
+                    {venue.owner.avatar?.url ? (
+                      <img
+                        src={venue.owner.avatar.url}
+                        alt={venue.owner.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 font-semibold">
+                          {venue.owner.name[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-gray-900">{venue.owner.name}</p>
+                      {venue.owner.bio && (
+                        <p className="text-sm text-gray-600">{venue.owner.bio}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <div className="border-t border-b py-4 my-4">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Amenities</h2>
-            <div className="flex flex-wrap gap-3">
-              {venue.meta.wifi && (
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded">
-                  WiFi
-                </span>
+              {/* Owner actions */}
+              {isOwner && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Edit Venue
+                  </button>
+                  <button
+                    onClick={handleDeleteVenue}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Delete Venue
+                  </button>
+                </div>
               )}
-              {venue.meta.parking && (
-                <span className="bg-green-100 text-green-800 px-3 py-1 rounded">
-                  Parking
-                </span>
-              )}
-              {venue.meta.breakfast && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded">
-                  Breakfast
-                </span>
-              )}
-              {venue.meta.pets && (
-                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded">
-                  Pets Allowed
-                </span>
-              )}
+
+              {/* Description */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Description</h2>
+                <p className="text-gray-700 whitespace-pre-line text-sm">
+                  {venue.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Availability Calendar */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900">Availability</h3>
+              <BookingCalendar bookings={venue.bookings || []} />
             </div>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Description</h2>
-            <p className="text-gray-700 whitespace-pre-line">
-              {venue.description}
-            </p>
-          </div>
-
-          {/* Booking Calendar */}
-          {venue.bookings && venue.bookings.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900">Availability</h2>
-              <BookingCalendar bookings={venue.bookings} />
-            </div>
-          )}
-
-          <div className="mt-12">
-            {!showBookingForm ? (
+          {/* Booking Section - Full Width */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            {!isLoggedIn ? (
+              // Not logged in - show login prompt
+              <div className="text-center py-4">
+                <p className="text-gray-700 mb-3">Please log in to make a booking</p>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-semibold"
+                >
+                  Log In
+                </button>
+              </div>
+            ) : isVenueManager ? (
+              // Logged in as venue manager - show info message
+              <div className="text-center py-4">
+                <p className="text-gray-700">Venue managers cannot make bookings.</p>
+              </div>
+            ) : !showBookingForm ? (
+              // Logged in as customer - show booking button
               <button
                 onClick={() => setShowBookingForm(true)}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 text-lg font-semibold"
@@ -270,6 +300,7 @@ export default function VenueDetails() {
                 Book Now
               </button>
             ) : (
+              // Show booking form
               <BookingForm
                 maxGuests={venue.maxGuests}
                 onSubmit={handleBooking}

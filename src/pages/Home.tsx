@@ -180,7 +180,10 @@ export default function Home() {
         {/* All Venues Section */}
         <div className="mb-8 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">
-            All Venues {filteredVenues.length !== venues.length && `(${filteredVenues.length} of ${venues.length})`}
+            {searchQuery || location || guests || dateFrom || dateTo
+              ? `Search Results (${filteredVenues.length} ${filteredVenues.length === 1 ? 'venue' : 'venues'})`
+              : 'All Venues'
+            }
           </h2>
         </div>
 

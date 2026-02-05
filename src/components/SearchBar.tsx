@@ -66,7 +66,7 @@ export default function SearchBar({
           onChange={(e) => onDateFromChange(e.target.value)}
           placeholder="Check in"
           min={new Date().toISOString().split('T')[0]}
-          className="w-40 px-4 py-3 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+          className="w-40 px-4 py-3 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 [color-scheme:light]"
         />
         
         <input
@@ -75,7 +75,7 @@ export default function SearchBar({
           onChange={(e) => onDateToChange(e.target.value)}
           placeholder="Check out"
           min={dateFrom || new Date().toISOString().split('T')[0]}
-          className="w-40 px-4 py-3 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+          className="w-40 px-4 py-3 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 [color-scheme:light]"
         />
         
         <button
@@ -135,7 +135,7 @@ export default function SearchBar({
             onChange={(e) => onDateFromChange(e.target.value)}
             placeholder="Check in"
             min={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 focus:ring-blue-500 focus:border-blue-500 [color-scheme:light]"
           />
           
           <input
@@ -144,7 +144,7 @@ export default function SearchBar({
             onChange={(e) => onDateToChange(e.target.value)}
             placeholder="Check out"
             min={dateFrom || new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 focus:ring-blue-500 focus:border-blue-500 [color-scheme:light]"
           />
         </div>
       </div>

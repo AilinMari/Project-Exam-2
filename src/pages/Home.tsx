@@ -15,6 +15,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   
   // Filter states
   const [location, setLocation] = useState('');
@@ -94,6 +95,7 @@ export default function Home() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasSearched(true);
     applyFilters();
   };
 
@@ -103,6 +105,7 @@ export default function Home() {
     setGuests('');
     setDateFrom('');
     setDateTo('');
+    setHasSearched(false);
     setFilteredVenues(venues);
   };
 
@@ -180,7 +183,7 @@ export default function Home() {
         {/* All Venues Section */}
         <div className="mb-8 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">
-            {searchQuery || location || guests || dateFrom || dateTo
+            {hasSearched
               ? `Search Results (${filteredVenues.length} ${filteredVenues.length === 1 ? 'venue' : 'venues'})`
               : 'All Venues'
             }

@@ -52,7 +52,14 @@ class ApiClient {
       throw new Error(error.message || 'An error occurred');
     }
 
-    return response.json();
+    // Handle empty responses (like DELETE requests)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+    
+    // For responses without content (e.g., 204 No Content)
+    return {} as T;
   }
 
   get<T>(endpoint: string, requiresAuth = false): Promise<T> {

@@ -125,7 +125,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Header Image with Search Overlay */}
-      <div className="relative h-[700px] sm:h-[650px] lg:h-[500px] bg-cover bg-center" 
+      <div className="relative h-[600px] sm:h-[550px] lg:h-[500px] bg-cover bg-center" 
            style={{ 
              backgroundImage: 'url(/Images/hero.png)'
            }}>

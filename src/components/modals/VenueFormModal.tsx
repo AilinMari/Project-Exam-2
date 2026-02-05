@@ -101,8 +101,8 @@ export default function VenueFormModal({
                     type="number"
                     required
                     min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                    value={formData.price || ''}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
                   />
                 </div>
@@ -115,8 +115,8 @@ export default function VenueFormModal({
                     type="number"
                     required
                     min="1"
-                    value={formData.maxGuests}
-                    onChange={(e) => setFormData({ ...formData, maxGuests: parseInt(e.target.value) })}
+                    value={formData.maxGuests || ''}
+                    onChange={(e) => setFormData({ ...formData, maxGuests: parseInt(e.target.value) || 1 })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
                   />
                 </div>

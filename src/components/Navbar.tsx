@@ -6,6 +6,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [isVenueManager, setIsVenueManager] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check auth status whenever location changes
@@ -19,6 +20,11 @@ export default function Navbar() {
     setIsVenueManager(venueManager);
   }, [location]);
 
+  useEffect(() => {
+    // Close menu when location changes
+    setIsMenuOpen(false);
+  }, [location]);
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userName');
@@ -26,6 +32,7 @@ export default function Navbar() {
     setIsLoggedIn(false);
     setUserName(null);
     setIsVenueManager(false);
+    setIsMenuOpen(false);
     window.location.href = '/';
   };
 
@@ -38,15 +45,16 @@ export default function Navbar() {
               <img 
                 src="/Images/holidaze logo.png" 
                 alt="Holidaze Logo" 
-                className="h-10 w-auto"
+                className="h-8 sm:h-10 w-auto"
               />
-              <span className="text-2xl font-bold text-blue-600">
+              <span className="text-xl sm:text-2xl font-bold text-blue-600">
                 Holidaze
               </span>
             </Link>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Desktop menu */}
+          <div className="hidden md:flex items-center space-x-4">
             <Link
               to="/"
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
@@ -97,7 +105,79 @@ export default function Navbar() {
               </>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-700 hover:text-blue-600 focus:outline-none p-2"
+              aria-label="Toggle menu"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Mobile menu */}
+        {isMenuOpen && (
+          <div className="md:hidden pb-4 space-y-2">
+            <Link
+              to="/"
+              className="block text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Home
+            </Link>
+            
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="block text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
+                {userName && (
+                  <div className={`px-3 py-2 text-sm font-semibold ${
+                    isVenueManager ? 'text-red-600' : 'text-blue-600'
+                  }`}>
+                    Welcome, {userName}
+                  </div>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className={`w-full text-left text-white px-3 py-2 rounded-md text-sm font-medium ${
+                    isVenueManager 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/register"
+                  className="block bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 text-center"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );

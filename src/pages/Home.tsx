@@ -124,15 +124,43 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero Header Image with Search Overlay */}
-      <div className="relative h-[600px] sm:h-[550px] lg:h-[500px] bg-cover bg-center" 
+      {/* Hero Header Image with Register Buttons */}
+      <div className="relative h-[400px] sm:h-[400px] lg:h-[400px] bg-cover bg-center" 
            style={{ 
              backgroundImage: 'url(/Images/hero.png)'
            }}>
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/30" />
         
-        {/* Search Bar Overlay */}
-        <div className="relative z-10 flex flex-col items-center py-8 sm:py-12 lg:py-16 h-full px-4">
+        {/* Register Buttons - Only show when not logged in */}
+        {!isLoggedIn && (
+          <div className="relative top-20 z-10 flex flex-col items-center justify-center px-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md sm:max-w-none justify-center">
+              <Link
+                to="/register"
+                state={{ tab: 'customer' }}
+                className="bg-blue-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-blue-700 font-medium text-center shadow-lg"
+              >
+                Register as a Customer
+              </Link>
+              <Link
+                to="/register"
+                state={{ tab: 'manager' }}
+                className="bg-orange-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-orange-700 font-medium text-center shadow-lg"
+              >
+                Register as a Venue Manager
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Featured Venues Carousel */}
+      <FeaturedVenuesCarousel venues={featuredVenues} />
+
+      {/* Search Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        <div className="flex justify-center mb-8">
           <SearchBar
             searchQuery={searchQuery}
             location={location}
@@ -147,36 +175,8 @@ export default function Home() {
             onSubmit={handleSearch}
             onClearFilters={handleClearFilters}
           />
-
-          {/* Register Buttons - Only show when not logged in */}
-          {!isLoggedIn && (
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md sm:max-w-none justify-center">
-              <Link
-                to="/register"
-                state={{ tab: 'customer' }}
-                className="bg-blue-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-blue-700 font-medium text-center"
-              >
-                Register as a Customer
-              </Link>
-              <Link
-                to="/register"
-                state={{ tab: 'manager' }}
-                className="bg-orange-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-orange-700 font-medium text-center"
-              >
-                Register as a Venue Manager
-              </Link>
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* Featured Venues Carousel */}
-      <div className="mt-8 sm:mt-12 lg:mt-0">
-        <FeaturedVenuesCarousel venues={featuredVenues} />
-      </div>
-
-      {/* Search Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* All Venues Section */}
         <div className="mb-8 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">

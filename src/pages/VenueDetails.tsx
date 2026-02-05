@@ -303,6 +303,7 @@ export default function VenueDetails() {
               // Show booking form
               <BookingForm
                 maxGuests={venue.maxGuests}
+                existingBookings={venue.bookings || []}
                 onSubmit={handleBooking}
                 onCancel={() => setShowBookingForm(false)}
               />

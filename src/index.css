@@ -18,18 +18,47 @@
   /* Fix date input calendar icons and styling */
   input[type="date"] {
     color-scheme: light;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+    -webkit-appearance: auto;
+    -moz-appearance: textfield;
+    appearance: auto;
     position: relative;
+    background-color: white;
   }
 
-  /* Ensure calendar icon is visible on all browsers */
+  /* Ensure calendar icon is visible and clickable on all browsers */
   input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 1;
-    filter: invert(0);
+    filter: invert(0) brightness(0.4);
+    background: transparent;
     color: #374151;
+    width: 20px;
+    height: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Larger touch target for mobile */
+  @media (max-width: 1024px) {
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      width: 24px;
+      height: 24px;
+      padding: 4px;
+      margin-left: 4px;
+    }
+    
+    input[type="date"] {
+      padding-right: 10px !important;
+      cursor: pointer;
+      position: relative;
+      z-index: 50;
+    }
+    
+    /* Ensure calendar popup appears above everything */
+    input[type="date"]::-webkit-calendar-picker-indicator:active,
+    input[type="date"]:focus {
+      z-index: 9999;
+    }
   }
 
   /* Firefox date input styling */
@@ -37,6 +66,18 @@
     cursor: pointer;
     opacity: 1;
     color: #374151;
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    input[type="date"] {
+      min-height: 44px;
+      -webkit-appearance: auto;
+    }
+    
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   }
 }
 

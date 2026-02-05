@@ -32,9 +32,9 @@ export default function SearchBar({
   const hasFilters = searchQuery || location || guests || dateFrom || dateTo;
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-4xl bg-white rounded-lg shadow-lg mb-8">
+    <form onSubmit={onSubmit} className="w-full max-w-4xl bg-white rounded-lg shadow-lg mb-8 relative">
       {/* Desktop layout - horizontal */}
-      <div className="hidden lg:flex">
+      <div className="hidden lg:flex relative z-10">
         <input
           type="text"
           value={searchQuery}
@@ -89,7 +89,7 @@ export default function SearchBar({
       </div>
 
       {/* Mobile layout - vertical */}
-      <div className="lg:hidden p-4 flex flex-col gap-2">
+      <div className="lg:hidden p-4 flex flex-col gap-2 relative z-10">
         {/* Search input with button */}
         <div className="flex">
           <input

@@ -46,14 +46,14 @@
       padding: 4px;
       margin-left: 4px;
     }
-    
+
     input[type="date"] {
       padding-right: 10px !important;
       cursor: pointer;
       position: relative;
       z-index: 50;
     }
-    
+
     /* Ensure calendar popup appears above everything */
     input[type="date"]::-webkit-calendar-picker-indicator:active,
     input[type="date"]:focus {
@@ -74,7 +74,7 @@
       min-height: 44px;
       -webkit-appearance: auto;
     }
-    
+
     input[type="date"]::-webkit-date-and-time-value {
       text-align: left;
     }

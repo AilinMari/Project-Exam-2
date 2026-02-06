@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Venue, CreateVenueData } from '../types';
+import { Venue } from '../types';
 import ImageCarousel from '../components/venue/ImageCarousel';
 import VenueFormModal from '../components/modals/VenueFormModal';
 import { fetchVenue } from './VenueDetails/handlers/fetchVenue';
@@ -67,17 +67,6 @@ export default function VenueDetails() {
       </div>
     );
   }
-
-  const editFormData: CreateVenueData = {
-    name: venue.name,
-    description: venue.description,
-    media: venue.media || [],
-    price: venue.price,
-    maxGuests: venue.maxGuests,
-    rating: venue.rating || 0,
-    meta: venue.meta,
-    location: venue.location,
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -148,7 +137,16 @@ export default function VenueDetails() {
           setShowEditModal,
           fetchVenueCallback
         )}
-        initialData={editFormData}
+        initialData={{
+          name: venue.name,
+          description: venue.description,
+          media: venue.media || [],
+          price: venue.price,
+          maxGuests: venue.maxGuests,
+          rating: venue.rating || 0,
+          meta: venue.meta,
+          location: venue.location,
+        }}
         title="Edit Venue"
         submitButtonText="Update Venue"
         isSubmitting={updatingVenue}

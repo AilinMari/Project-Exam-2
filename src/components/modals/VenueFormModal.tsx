@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreateVenueData } from '../../types';
 import { handleSubmit } from './VenueFormModal/handlers/handleSubmit';
 import BasicInfo from './VenueFormModal/sections/BasicInfo';
@@ -26,6 +26,13 @@ export default function VenueFormModal({
   isSubmitting,
 }: VenueFormModalProps) {
   const [formData, setFormData] = useState<CreateVenueData>(initialData);
+
+  // Update formData when initialData or isOpen changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialData);
+    }
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 

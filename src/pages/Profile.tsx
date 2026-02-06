@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../utils/apiClient';
-import { API_ENDPOINTS } from '../config/api';
-import { Profile, Booking, Venue, ApiResponse, UpdateProfileData, CreateVenueData } from '../types';
+import { Profile, Booking, Venue, UpdateProfileData, CreateVenueData } from '../types';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import VenueFormModal from '../components/modals/VenueFormModal';
-import VenueList from '../components/venue/VenueList';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import CustomerBookingsSection from '../components/profile/CustomerBookingsSection';
 import VenueBookingsSection from '../components/profile/VenueBookingsSection';
 import ProfileCalendarSection from '../components/profile/ProfileCalendarSection';
+import { fetchData } from './Profile/handlers/fetchData';
+import { handleUpdateProfile } from './Profile/handlers/handleUpdateProfile';
+import { handleCreateVenue } from './Profile/handlers/handleCreateVenue';
+import { handleUpdateVenue } from './Profile/handlers/handleUpdateVenue';
+import { handleDeleteVenue } from './Profile/handlers/handleDeleteVenue';
+import { handleDeleteBooking } from './Profile/handlers/handleDeleteBooking';
+import MyVenuesSection from './Profile/components/MyVenuesSection';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -57,166 +61,8 @@ export default function ProfilePage() {
       return;
     }
 
-    fetchData(userName);
+    fetchData(userName, setProfile, setBookings, setVenues, setLoading);
   }, [navigate]);
-
-  const fetchData = async (userName: string) => {
-    try {
-      setLoading(true);
-      
-      // Fetch profile with bookings and venues
-      const profileResponse = await apiClient.get<ApiResponse<Profile>>(
-        `${API_ENDPOINTS.profileByName(userName)}?_bookings=true&_venues=true`,
-        true
-      );
-      setProfile(profileResponse.data);
-
-      // Fetch bookings with venue details
-      try {
-        const bookingsResponse = await apiClient.get<ApiResponse<Booking[]>>(
-          `${API_ENDPOINTS.profileBookings(userName)}?_venue=true`,
-          true
-        );
-        setBookings(bookingsResponse.data || []);
-      } catch (err) {
-        console.error('Error fetching bookings:', err);
-        setBookings([]);
-      }
-
-      // Fetch venues if user is a venue manager
-      if (profileResponse.data.venueManager) {
-        try {
-          const venuesResponse = await apiClient.get<ApiResponse<Venue[]>>(
-            `${API_ENDPOINTS.profileVenues(userName)}?_bookings=true`,
-            true
-          );
-          setVenues(venuesResponse.data || []);
-        } catch (err) {
-          console.error('Error fetching venues:', err);
-          setVenues([]);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      alert('Failed to load profile data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateProfile = async (data: UpdateProfileData) => {
-    if (!profile) return;
-
-    try {
-      const userName = localStorage.getItem('userName');
-      if (!userName) return;
-
-      const updateData: UpdateProfileData = {};
-      
-      if (data.bio) updateData.bio = data.bio;
-      if (data.avatar?.url) {
-        updateData.avatar = {
-          url: data.avatar.url,
-          alt: data.avatar.alt || profile.name,
-        };
-      }
-      if (data.banner?.url) {
-        updateData.banner = {
-          url: data.banner.url,
-          alt: data.banner.alt || `${profile.name} banner`,
-        };
-      }
-
-      const response = await apiClient.put<ApiResponse<Profile>>(
-        API_ENDPOINTS.updateProfile(userName),
-        updateData,
-        true
-      );
-
-      setProfile(response.data);
-      alert('Profile updated successfully!');
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      alert('Failed to update profile');
-      throw err;
-    }
-  };
-
-  const handleCreateVenue = async (formData: CreateVenueData) => {
-    setCreatingVenue(true);
-    try {
-      const response = await apiClient.post<ApiResponse<Venue>>(
-        API_ENDPOINTS.venues,
-        formData,
-        true
-      );
-
-      setVenues([...venues, response.data]);
-      setShowCreateVenueModal(false);
-      alert('Venue created successfully!');
-    } catch (err) {
-      console.error('Error creating venue:', err);
-      alert('Failed to create venue. Please try again.');
-      throw err;
-    } finally {
-      setCreatingVenue(false);
-    }
-  };
-
-  const handleEditVenue = (venue: Venue) => {
-    setEditingVenue(venue);
-    setShowEditVenueModal(true);
-  };
-
-  const handleUpdateVenue = async (formData: CreateVenueData) => {
-    if (!editingVenue) return;
-
-    setUpdatingVenue(true);
-    try {
-      const response = await apiClient.put<ApiResponse<Venue>>(
-        API_ENDPOINTS.venueById(editingVenue.id),
-        formData,
-        true
-      );
-
-      setVenues(venues.map(v => v.id === editingVenue.id ? response.data : v));
-      setShowEditVenueModal(false);
-      setEditingVenue(null);
-      alert('Venue updated successfully!');
-    } catch (err) {
-      console.error('Error updating venue:', err);
-      alert('Failed to update venue. Please try again.');
-      throw err;
-    } finally {
-      setUpdatingVenue(false);
-    }
-  };
-
-  const handleDeleteVenue = async (venueId: string) => {
-    if (!confirm('Are you sure you want to delete this venue?')) return;
-
-    try {
-      await apiClient.delete(API_ENDPOINTS.venueById(venueId), true);
-      setVenues(venues.filter(v => v.id !== venueId));
-      alert('Venue deleted successfully!');
-    } catch (err) {
-      console.error('Error deleting venue:', err);
-      alert('Failed to delete venue. Please try again.');
-    }
-  };
-
-  const handleDeleteBooking = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to delete this booking?')) return;
-
-    try {
-      await apiClient.delete(API_ENDPOINTS.bookingById(bookingId), true);
-      setBookings(bookings.filter(b => b.id !== bookingId));
-      alert('Booking deleted successfully!');
-    } catch (err) {
-      console.error('Error deleting booking:', err);
-      alert('Failed to delete booking. Please try again.');
-    }
-  };
 
   if (loading) {
     return (
@@ -268,32 +114,22 @@ export default function ProfilePage() {
               /* Venue Manager: Show venue bookings and venues */
               <>
                 <VenueBookingsSection venues={venues} />
-                {/* My Venues */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-red-600">
-                      My Venues
-                    </h2>
-                    <button
-                      onClick={() => setShowCreateVenueModal(true)}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                    >
-                      + Create Venue
-                    </button>
-                  </div>
-                  <VenueList
-                    venues={venues}
-                    onEdit={handleEditVenue}
-                    onDelete={handleDeleteVenue}
-                  />
-                </div>
+                <MyVenuesSection
+                  venues={venues}
+                  onCreateVenue={() => setShowCreateVenueModal(true)}
+                  onEditVenue={(venue) => {
+                    setEditingVenue(venue);
+                    setShowEditVenueModal(true);
+                  }}
+                  onDeleteVenue={(venueId) => handleDeleteVenue(venueId, venues, setVenues)}
+                />
               </>
             ) : (
               /* Customer: Show personal bookings */
               <CustomerBookingsSection 
                 bookings={bookings}
                 isManager={profile.venueManager ?? false}
-                onDeleteBooking={handleDeleteBooking}
+                onDeleteBooking={(bookingId) => handleDeleteBooking(bookingId, bookings, setBookings)}
               />
             )}
           </div>
@@ -313,14 +149,20 @@ export default function ProfilePage() {
       <EditProfileModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        onSubmit={handleUpdateProfile}
+        onSubmit={(data) => handleUpdateProfile(data, profile, setProfile)}
         initialData={editProfileData}
       />
 
       <VenueFormModal
         isOpen={showCreateVenueModal}
         onClose={() => setShowCreateVenueModal(false)}
-        onSubmit={handleCreateVenue}
+        onSubmit={(formData) => handleCreateVenue(
+          formData,
+          venues,
+          setVenues,
+          setShowCreateVenueModal,
+          setCreatingVenue
+        )}
         initialData={emptyVenueFormData}
         title="Create New Venue"
         submitButtonText="Create Venue"
@@ -333,7 +175,15 @@ export default function ProfilePage() {
           setShowEditVenueModal(false);
           setEditingVenue(null);
         }}
-        onSubmit={handleUpdateVenue}
+        onSubmit={(formData) => handleUpdateVenue(
+          formData,
+          editingVenue,
+          venues,
+          setVenues,
+          setShowEditVenueModal,
+          setEditingVenue,
+          setUpdatingVenue
+        )}
         initialData={editVenueData}
         title="Edit Venue"
         submitButtonText="Update Venue"

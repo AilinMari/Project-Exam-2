@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { apiClient } from '../utils/apiClient';
-import { API_ENDPOINTS } from '../config/api';
-import { Venue, ApiResponse } from '../types';
+import { Venue } from '../types';
 import SearchBar from '../components/SearchBar';
 import FeaturedVenuesCarousel from '../components/FeaturedVenuesCarousel';
-import VenueCard from '../components/venue/VenueCard';
+import { fetchVenues } from './Home/handlers/fetchVenues';
+import { handleSearch } from './Home/handlers/handleSearch';
+import { handleClearFilters } from './Home/handlers/handleClearFilters';
+import HeroSection from './Home/components/HeroSection';
+import VenuesSection from './Home/components/VenuesSection';
 
 export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -24,90 +25,11 @@ export default function Home() {
   const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
-    fetchVenues();
+    fetchVenues(setVenues, setFilteredVenues, setFeaturedVenues, setLoading, setError);
     // Check if user is logged in
     const token = localStorage.getItem('accessToken');
     setIsLoggedIn(!!token);
   }, []);
-
-  const fetchVenues = async () => {
-    try {
-      setLoading(true);
-      // Fetch venues sorted by creation date (newest first)
-      const response = await apiClient.get<ApiResponse<Venue[]>>(
-        `${API_ENDPOINTS.venues}?sort=created&sortOrder=desc`
-      );
-      
-      console.log('Fetched venues:', response.data);
-      console.log('Total venues fetched:', response.data.length);
-      console.log('First venue (newest):', response.data[0]);
-      console.log('Last venue (oldest):', response.data[response.data.length - 1]);
-      
-      setVenues(response.data);
-      setFilteredVenues(response.data);
-      
-      // Get top 5 venues with highest rating for featured carousel
-      const sortedByRating = [...response.data]
-        .sort((a, b) => b.rating - a.rating)
-        .slice(0, 5);
-      setFeaturedVenues(sortedByRating);
-    } catch (err) {
-      console.error('Error fetching venues:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch venues');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
-    let filtered = [...venues];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(venue =>
-        venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        venue.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by location
-    if (location) {
-      filtered = filtered.filter(venue =>
-        venue.location.city?.toLowerCase().includes(location.toLowerCase()) ||
-        venue.location.country?.toLowerCase().includes(location.toLowerCase())
-      );
-    }
-
-    // Filter by guests
-    if (guests) {
-      filtered = filtered.filter(venue => venue.maxGuests >= guests);
-    }
-
-    // Filter by dates (check if venue is available)
-    // Note: This is a basic check. For real availability, you'd need to check existing bookings
-    if (dateFrom && dateTo) {
-      // For now, we'll just show all venues since we don't have booking data in the listing
-      // In a real app, you'd fetch bookings and check availability
-    }
-
-    setFilteredVenues(filtered);
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setHasSearched(true);
-    applyFilters();
-  };
-
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setLocation('');
-    setGuests('');
-    setDateFrom('');
-    setDateTo('');
-    setHasSearched(false);
-    setFilteredVenues(venues);
-  };
 
   if (loading) {
     return (
@@ -128,34 +50,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Header Image with Register Buttons */}
-      <div className="relative h-[400px] sm:h-[400px] lg:h-[400px] bg-cover bg-center" 
-           style={{ 
-             backgroundImage: 'url(/Images/hero.png)'
-           }}>
-        <div className="absolute inset-0 bg-black/30" />
-        
-        {/* Register Buttons - Only show when not logged in */}
-        {!isLoggedIn && (
-          <div className="relative top-20 z-10 flex flex-col items-center justify-center px-4">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md sm:max-w-none justify-center">
-              <Link
-                to="/register"
-                state={{ tab: 'customer' }}
-                className="bg-blue-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-blue-700 font-medium text-center shadow-lg"
-              >
-                Register as a Customer
-              </Link>
-              <Link
-                to="/register"
-                state={{ tab: 'manager' }}
-                className="bg-orange-600 text-white px-6 sm:px-8 py-3 rounded-md hover:bg-orange-700 font-medium text-center shadow-lg"
-              >
-                Register as a Venue Manager
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
+      <HeroSection isLoggedIn={isLoggedIn} />
 
       {/* Featured Venues Carousel */}
       <FeaturedVenuesCarousel venues={featuredVenues} />
@@ -175,38 +70,44 @@ export default function Home() {
             onGuestsChange={setGuests}
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}
-            onSubmit={handleSearch}
-            onClearFilters={handleClearFilters}
+            onSubmit={(e) => handleSearch(
+              e,
+              venues,
+              searchQuery,
+              location,
+              guests,
+              dateFrom,
+              dateTo,
+              setHasSearched,
+              setFilteredVenues
+            )}
+            onClearFilters={() => handleClearFilters(
+              venues,
+              setSearchQuery,
+              setLocation,
+              setGuests,
+              setDateFrom,
+              setDateTo,
+              setHasSearched,
+              setFilteredVenues
+            )}
           />
         </div>
 
-        {/* All Venues Section */}
-        <div className="mb-8 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {hasSearched
-              ? `Search Results (${filteredVenues.length} ${filteredVenues.length === 1 ? 'venue' : 'venues'})`
-              : 'All Venues'
-            }
-          </h2>
-        </div>
-
-        {filteredVenues.length === 0 ? (
-          <div className="text-center text-gray-600 py-12">
-            <p className="text-lg mb-4">No venues found matching your criteria.</p>
-            <button
-              onClick={handleClearFilters}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Clear filters and show all venues
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVenues.map((venue) => (
-              <VenueCard key={venue.id} venue={venue} />
-            ))}
-          </div>
-        )}
+        <VenuesSection
+          filteredVenues={filteredVenues}
+          hasSearched={hasSearched}
+          onClearFilters={() => handleClearFilters(
+            venues,
+            setSearchQuery,
+            setLocation,
+            setGuests,
+            setDateFrom,
+            setDateTo,
+            setHasSearched,
+            setFilteredVenues
+          )}
+        />
       </div>
     </div>
   );

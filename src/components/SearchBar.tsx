@@ -15,6 +15,22 @@ interface SearchBarProps {
   onClearFilters: () => void;
 }
 
+/**
+ * SearchBar component for filtering venues
+ * Provides responsive layouts for desktop (horizontal) and mobile (vertical)
+ * @param searchQuery - Search text for venue names/descriptions
+ * @param location - Location filter (city or country)
+ * @param guests - Number of guests filter
+ * @param dateFrom - Check-in date filter
+ * @param dateTo - Check-out date filter
+ * @param onSearchQueryChange - Handler for search query changes
+ * @param onLocationChange - Handler for location changes
+ * @param onGuestsChange - Handler for guest count changes
+ * @param onDateFromChange - Handler for check-in date changes
+ * @param onDateToChange - Handler for check-out date changes
+ * @param onSubmit - Handler for form submission
+ * @param onClearFilters - Handler for clearing all filters
+ */
 export default function SearchBar({
   searchQuery,
   location,

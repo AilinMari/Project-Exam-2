@@ -4,6 +4,10 @@ interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
 
+/**
+ * API Client for handling HTTP requests to the Noroff API
+ * Manages authentication, headers, and error handling
+ */
 class ApiClient {
   private baseUrl: string;
   private apiKey: string;
@@ -13,6 +17,11 @@ class ApiClient {
     this.apiKey = apiKey;
   }
 
+  /**
+   * Constructs headers for API requests
+   * @param requiresAuth - Whether the request requires authentication token
+   * @returns Headers object with API key and optional Bearer token
+   */
   private getHeaders(requiresAuth: boolean = false): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -29,6 +38,13 @@ class ApiClient {
     return headers;
   }
 
+  /**
+   * Generic request handler for all HTTP methods
+   * @param endpoint - API endpoint path
+   * @param options - Request options including method, body, and auth requirements
+   * @returns Promise resolving to the parsed JSON response
+   * @throws Error if the request fails or returns non-OK status
+   */
   async request<T>(
     endpoint: string,
     options: RequestOptions = {}
@@ -62,6 +78,12 @@ class ApiClient {
     return {} as T;
   }
 
+  /**
+   * Performs a GET request
+   * @param endpoint - API endpoint path
+   * @param requiresAuth - Whether authentication is required
+   * @returns Promise with the response data
+   */
   get<T>(endpoint: string, requiresAuth = false): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'GET',
@@ -69,6 +91,13 @@ class ApiClient {
     });
   }
 
+  /**
+   * Performs a POST request
+   * @param endpoint - API endpoint path
+   * @param data - Request body data
+   * @param requiresAuth - Whether authentication is required
+   * @returns Promise with the response data
+   */
   post<T>(endpoint: string, data?: unknown, requiresAuth = false): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
@@ -77,6 +106,13 @@ class ApiClient {
     });
   }
 
+  /**
+   * Performs a PUT request
+   * @param endpoint - API endpoint path
+   * @param data - Request body data
+   * @param requiresAuth - Whether authentication is required
+   * @returns Promise with the response data
+   */
   put<T>(endpoint: string, data?: unknown, requiresAuth = false): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -85,6 +121,12 @@ class ApiClient {
     });
   }
 
+  /**
+   * Performs a DELETE request
+   * @param endpoint - API endpoint path
+   * @param requiresAuth - Whether authentication is required
+   * @returns Promise with the response data (empty object for 204 responses)
+   */
   delete<T>(endpoint: string, requiresAuth = false): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'DELETE',
@@ -93,4 +135,5 @@ class ApiClient {
   }
 }
 
+/** Singleton instance of the API client */
 export const apiClient = new ApiClient(API_BASE_URL, API_KEY);

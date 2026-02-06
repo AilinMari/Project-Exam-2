@@ -5,17 +5,37 @@ interface BookingCalendarProps {
   bookings: Booking[];
 }
 
+/**
+ * BookingCalendar component displays a monthly calendar view with booked dates
+ * Shows which dates are unavailable due to existing bookings
+ * @param bookings - Array of bookings to display on the calendar
+ */
 export default function BookingCalendar({ bookings }: BookingCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  /**
+   * Gets the number of days in a given month
+   * @param date - Date object for the month
+   * @returns Number of days in the month
+   */
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
+  /**
+   * Gets the day of the week (0-6) for the first day of the month
+   * @param date - Date object for the month
+   * @returns Day of week (0 = Sunday, 6 = Saturday)
+   */
   const getFirstDayOfMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
+  /**
+   * Checks if a specific day has any bookings
+   * @param day - Day of the month (1-31)
+   * @returns true if the day is booked, false otherwise
+   */
   const isDateBooked = (day: number) => {
     const checkDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     

@@ -5,6 +5,11 @@ interface VenueCardProps {
   venue: Venue;
 }
 
+/**
+ * VenueCard component displays a clickable card preview of a venue
+ * Shows venue image, name, location, price, and rating
+ * @param venue - The venue object to display
+ */
 export default function VenueCard({ venue }: VenueCardProps) {
   return (
     <Link

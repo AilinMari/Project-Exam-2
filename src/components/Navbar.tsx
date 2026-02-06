@@ -1,6 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
+/**
+ * Navbar component provides main navigation for the application
+ * Features responsive design with hamburger menu for mobile
+ * Displays different navigation options based on authentication and user role
+ */
 export default function Navbar() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);

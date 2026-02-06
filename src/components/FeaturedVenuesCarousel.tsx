@@ -6,11 +6,20 @@ interface FeaturedVenuesCarouselProps {
   venues: Venue[];
 }
 
+/**
+ * FeaturedVenuesCarousel component displays top-rated venues in a horizontal scrollable carousel
+ * Includes navigation arrows that appear/hide based on scroll position
+ * @param venues - Array of featured venues to display (typically top 5 by rating)
+ */
 export default function FeaturedVenuesCarousel({ venues }: FeaturedVenuesCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
+  /**
+   * Checks scroll position and updates arrow visibility
+   * Left arrow shows when scrolled right, right arrow shows when more content is available
+   */
   const checkArrows = () => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;

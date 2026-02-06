@@ -8,6 +8,14 @@ interface BookingFormProps {
   onCancel: () => void;
 }
 
+/**
+ * BookingForm component for creating venue bookings
+ * Validates date availability against existing bookings to prevent double-booking
+ * @param maxGuests - Maximum number of guests allowed for the venue
+ * @param existingBookings - Array of existing bookings to check for date conflicts
+ * @param onSubmit - Callback function to handle booking submission
+ * @param onCancel - Callback function to handle form cancellation
+ */
 export default function BookingForm({ maxGuests, existingBookings, onSubmit, onCancel }: BookingFormProps) {
   const [bookingData, setBookingData] = useState({
     dateFrom: '',
@@ -16,6 +24,12 @@ export default function BookingForm({ maxGuests, existingBookings, onSubmit, onC
   });
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Checks if the selected booking dates overlap with any existing bookings
+   * @param dateFrom - Check-in date in ISO format
+   * @param dateTo - Check-out date in ISO format
+   * @returns true if dates are available, false if they overlap with existing bookings
+   */
   const checkDateAvailability = (dateFrom: string, dateTo: string): boolean => {
     if (!dateFrom || !dateTo) return true;
 

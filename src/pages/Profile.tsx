@@ -75,7 +75,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl text-red-600">Failed to load profile</div>
+        <div className="text-xl text-orange-600">Failed to load profile</div>
       </div>
     );
   }

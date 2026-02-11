@@ -42,7 +42,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl text-red-600">Error: {error}</div>
+        <div className="text-xl text-orange-600">Error: {error}</div>
       </div>
     );
   }

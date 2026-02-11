@@ -43,7 +43,7 @@ export default function MobileMenu({ isOpen, isLoggedIn, userName, isVenueManage
               </Link>
               {userName && (
                 <div className={`px-3 py-2 text-sm font-semibold ${
-                  isVenueManager ? 'text-red-600' : 'text-blue-600'
+                  isVenueManager ? 'text-orange-600' : 'text-blue-600'
                 }`}>
                   Welcome, {userName}
                 </div>
@@ -51,8 +51,8 @@ export default function MobileMenu({ isOpen, isLoggedIn, userName, isVenueManage
               <button
                 onClick={onLogout}
                 className={`w-full text-left text-white px-3 py-2 rounded-md text-sm font-medium ${
-                  isVenueManager 
-                    ? 'bg-red-600 hover:bg-red-700' 
+                  isVenueManager
+                    ? 'bg-orange-600 hover:bg-orange-700' 
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >

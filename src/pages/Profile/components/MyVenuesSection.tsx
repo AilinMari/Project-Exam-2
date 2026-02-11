@@ -17,12 +17,12 @@ export default function MyVenuesSection({
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-red-600">
+        <h2 className="text-2xl font-bold text-orange-600">
           My Venues
         </h2>
         <button
           onClick={onCreateVenue}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
         >
           + Create Venue
         </button>

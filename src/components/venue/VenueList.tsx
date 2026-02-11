@@ -46,7 +46,7 @@ export default function VenueList({ venues, onEdit, onDelete }: VenueListProps) 
               {venue.description}
             </p>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-xl font-bold text-red-600">
+              <span className="text-xl font-bold text-orange-600">
                 ${venue.price}
                 <span className="text-sm text-gray-600">/night</span>
               </span>

@@ -22,7 +22,7 @@ export default function Location({ formData, setFormData }: LocationProps) {
               ...formData,
               location: { ...formData.location, city: e.target.value }
             })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 text-gray-900"
             placeholder="Oslo"
           />
         </div>
@@ -38,7 +38,7 @@ export default function Location({ formData, setFormData }: LocationProps) {
               ...formData,
               location: { ...formData.location, country: e.target.value }
             })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 text-gray-900"
             placeholder="Norway"
           />
         </div>

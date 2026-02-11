@@ -61,7 +61,7 @@ export default function VenueFormModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 disabled:bg-gray-400 font-medium"
+                className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 disabled:bg-gray-400 font-medium"
               >
                 {isSubmitting ? 'Submitting...' : submitButtonText}
               </button>

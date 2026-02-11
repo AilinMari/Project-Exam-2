@@ -61,7 +61,7 @@ export default function VenueDetails() {
   if (error || !venue) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl text-red-600">
+        <div className="text-xl text-orange-600">
           Error: {error || 'Venue not found'}
         </div>
       </div>

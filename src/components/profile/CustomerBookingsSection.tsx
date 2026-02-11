@@ -23,7 +23,7 @@ export default function CustomerBookingsSection({
       {/* My Bookings List */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className={`text-2xl font-bold mb-4 ${
-          isManager ? 'text-red-600' : 'text-blue-600'
+          isManager ? 'text-orange-600' : 'text-blue-600'
         }`}>
           My Bookings
         </h2>

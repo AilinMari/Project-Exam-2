@@ -17,7 +17,7 @@ export default function VenueBookingsSection({ venues }: VenueBookingsSectionPro
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-4 text-red-600">
+      <h2 className="text-2xl font-bold mb-4 text-orange-600">
         Venue Bookings
       </h2>
       {venueBookings.length === 0 ? (

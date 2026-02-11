@@ -22,13 +22,13 @@ export default function ImageSection({ formData, setFormData }: ImageSectionProp
                 type="url"
                 value={image.url}
                 onChange={(e) => updateMediaField(formData, setFormData, index, e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-gray-900"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 text-gray-900"
                 placeholder="https://example.com/venue-image.jpg"
               />
               <button
                 type="button"
                 onClick={() => removeMediaField(formData, setFormData, index)}
-                className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                className="px-3 py-2 bg-orange-100 text-orange-600 rounded-md hover:bg-orange-200"
               >
                 Remove
               </button>
@@ -40,7 +40,7 @@ export default function ImageSection({ formData, setFormData }: ImageSectionProp
         <button
           type="button"
           onClick={() => addMediaField(formData, setFormData)}
-          className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-red-500 hover:text-red-600"
+          className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-orange-500 hover:text-orange-600"
         >
           + Add Image URL
         </button>

@@ -7,7 +7,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ profile, onEditClick }: ProfileHeaderProps) {
   return (
-    <div className={`py-12 ${profile.venueManager ? 'bg-red-500' : 'bg-blue-600'}`}>
+    <div className={`py-12 ${profile.venueManager ? 'bg-orange-600' : 'bg-blue-600'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6 inline-block">
           <div className="flex items-center gap-4">
@@ -26,7 +26,7 @@ export default function ProfileHeader({ profile, onEditClick }: ProfileHeaderPro
             )}
             <div>
               <h1 className={`text-2xl font-bold ${
-                profile.venueManager ? 'text-red-600' : 'text-blue-600'
+                profile.venueManager ? 'text-orange-600' : 'text-blue-600'
               }`}>
                 Hello,<br />{profile.name}!
               </h1>
@@ -34,7 +34,7 @@ export default function ProfileHeader({ profile, onEditClick }: ProfileHeaderPro
                 onClick={onEditClick}
                 className={`mt-2 text-white px-4 py-1 rounded text-sm ${
                   profile.venueManager 
-                    ? 'bg-red-600 hover:bg-red-700' 
+                    ? 'bg-orange-600 hover:bg-orange-700' 
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}>
                 Edit Profile

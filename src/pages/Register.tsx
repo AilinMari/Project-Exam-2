@@ -121,7 +121,7 @@ export default function Register() {
             onClick={() => handleTabChange('manager')}
             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'manager'
-                ? 'border-red-500 text-red-500'
+                ? 'border-orange-600 text-orange-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -138,8 +138,8 @@ export default function Register() {
         
         <form className="space-y-4" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="rounded-md bg-orange-50 p-4">
+              <p className="text-sm text-orange-800">{error}</p>
             </div>
           )}
 
@@ -231,7 +231,7 @@ export default function Register() {
               className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
                 activeTab === 'customer'
                   ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-                  : 'bg-red-500 hover:bg-red-600 focus:ring-red-500'
+                  : 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-600'
               }`}
             >
               {loading ? 'Creating account...' : `Register as a ${activeTab === 'customer' ? 'Customer' : 'Venue Manager'}`}

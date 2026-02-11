@@ -16,13 +16,13 @@ export default function MyVenuesSection({
 }: MyVenuesSectionProps) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-orange-600">
+      <div className="flex justify-between items-center mb-4 gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-orange-600 flex-shrink-0">
           My Venues
         </h2>
         <button
           onClick={onCreateVenue}
-          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+          className="bg-orange-600 text-white px-3 sm:px-4 py-2 rounded hover:bg-orange-700 text-sm sm:text-base whitespace-nowrap"
         >
           + Create Venue
         </button>

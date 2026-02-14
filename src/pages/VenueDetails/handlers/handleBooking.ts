@@ -6,10 +6,11 @@ export const handleBooking = async (
   id: string | undefined,
   navigate: (path: string) => void,
   setShowBookingForm: (show: boolean) => void,
-  fetchVenue: () => void
+  fetchVenue: () => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   if (!localStorage.getItem('accessToken')) {
-    alert('Please login to make a booking');
+    addToast?.('Please login to make a booking', 'warning');
     navigate('/login');
     return;
   }
@@ -23,10 +24,11 @@ export const handleBooking = async (
       },
       true
     );
-    alert('Booking successful!');
+    addToast?.('Booking successful! 🎉', 'success');
     setShowBookingForm(false);
     fetchVenue();
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Booking failed');
+    const errorMessage = err instanceof Error ? err.message : 'Booking failed. Please try again.';
+    addToast?.(errorMessage, 'error');
   }
 };

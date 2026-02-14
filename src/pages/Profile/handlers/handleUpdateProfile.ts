@@ -5,7 +5,8 @@ import { Profile, UpdateProfileData, ApiResponse } from '../../../types';
 export const handleUpdateProfile = async (
   data: UpdateProfileData,
   profile: Profile | null,
-  setProfile: (profile: Profile) => void
+  setProfile: (profile: Profile) => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   if (!profile) return;
 
@@ -36,10 +37,9 @@ export const handleUpdateProfile = async (
     );
 
     setProfile(response.data);
-    alert('Profile updated successfully!');
-  } catch (err) {
-    console.error('Error updating profile:', err);
-    alert('Failed to update profile');
-    throw err;
+    addToast?.('Profile updated successfully! 🎉', 'success');
+  } catch {
+    addToast?.('Failed to update profile. Please try again.', 'error');
+    throw new Error('Failed to update profile');
   }
 };

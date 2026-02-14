@@ -5,16 +5,16 @@ import { Booking } from '../../../types';
 export const handleDeleteBooking = async (
   bookingId: string,
   bookings: Booking[],
-  setBookings: (bookings: Booking[]) => void
+  setBookings: (bookings: Booking[]) => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   if (!confirm('Are you sure you want to delete this booking?')) return;
 
   try {
     await apiClient.delete(API_ENDPOINTS.bookingById(bookingId), true);
     setBookings(bookings.filter(b => b.id !== bookingId));
-    alert('Booking deleted successfully!');
-  } catch (err) {
-    console.error('Error deleting booking:', err);
-    alert('Failed to delete booking. Please try again.');
+    addToast?.('Booking deleted successfully!', 'success');
+  } catch {
+    addToast?.('Failed to delete booking. Please try again.', 'error');
   }
 };

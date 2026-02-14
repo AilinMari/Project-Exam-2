@@ -7,7 +7,8 @@ export const handleCreateVenue = async (
   venues: Venue[],
   setVenues: (venues: Venue[]) => void,
   setShowCreateVenueModal: (show: boolean) => void,
-  setCreatingVenue: (creating: boolean) => void
+  setCreatingVenue: (creating: boolean) => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   setCreatingVenue(true);
   try {
@@ -19,11 +20,10 @@ export const handleCreateVenue = async (
 
     setVenues([...venues, response.data]);
     setShowCreateVenueModal(false);
-    alert('Venue created successfully!');
-  } catch (err) {
-    console.error('Error creating venue:', err);
-    alert('Failed to create venue. Please try again.');
-    throw err;
+    addToast?.('Venue created successfully! 🏠', 'success');
+  } catch {
+    addToast?.('Failed to create venue. Please try again.', 'error');
+    throw new Error('Failed to create venue');
   } finally {
     setCreatingVenue(false);
   }

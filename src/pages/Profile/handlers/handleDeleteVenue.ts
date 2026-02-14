@@ -5,16 +5,16 @@ import { Venue } from '../../../types';
 export const handleDeleteVenue = async (
   venueId: string,
   venues: Venue[],
-  setVenues: (venues: Venue[]) => void
+  setVenues: (venues: Venue[]) => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   if (!confirm('Are you sure you want to delete this venue?')) return;
 
   try {
     await apiClient.delete(API_ENDPOINTS.venueById(venueId), true);
     setVenues(venues.filter(v => v.id !== venueId));
-    alert('Venue deleted successfully!');
-  } catch (err) {
-    console.error('Error deleting venue:', err);
-    alert('Failed to delete venue. Please try again.');
+    addToast?.('Venue deleted successfully!', 'success');
+  } catch {
+    addToast?.('Failed to delete venue. Please try again.', 'error');
   }
 };

@@ -9,7 +9,8 @@ export const handleUpdateVenue = async (
   setVenues: (venues: Venue[]) => void,
   setShowEditVenueModal: (show: boolean) => void,
   setEditingVenue: (venue: Venue | null) => void,
-  setUpdatingVenue: (updating: boolean) => void
+  setUpdatingVenue: (updating: boolean) => void,
+  addToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
   if (!editingVenue) return;
 
@@ -24,11 +25,10 @@ export const handleUpdateVenue = async (
     setVenues(venues.map(v => v.id === editingVenue.id ? response.data : v));
     setShowEditVenueModal(false);
     setEditingVenue(null);
-    alert('Venue updated successfully!');
-  } catch (err) {
-    console.error('Error updating venue:', err);
-    alert('Failed to update venue. Please try again.');
-    throw err;
+    addToast?.('Venue updated successfully! 🎉', 'success');
+  } catch {
+    addToast?.('Failed to update venue. Please try again.', 'error');
+    throw new Error('Failed to update venue');
   } finally {
     setUpdatingVenue(false);
   }

@@ -56,11 +56,8 @@ export default function Register() {
         submitData.bio = formData.bio;
       }
 
-      console.log('Submitting registration data:', submitData);
-
       // Register user
-      const registerResponse = await apiClient.post(API_ENDPOINTS.register, submitData);
-      console.log('Registration successful:', registerResponse);
+      await apiClient.post(API_ENDPOINTS.register, submitData);
 
       // Auto-login after registration
       const loginResponse = await apiClient.post<AuthResponse>(
@@ -82,15 +79,13 @@ export default function Register() {
         );
         const isVenueManager = profileResponse.data?.venueManager || false;
         localStorage.setItem('venueManager', isVenueManager ? 'true' : 'false');
-      } catch (profileErr) {
-        console.error('Could not fetch profile:', profileErr);
+      } catch {
         // Use the registration form value as fallback
         localStorage.setItem('venueManager', formData.venueManager ? 'true' : 'false');
       }
 
       navigate('/profile');
     } catch (err) {
-      console.error('Registration error:', err);
       const errorMessage = (err as { response?: { data?: { errors?: Array<{ message: string }> } }; message?: string })?.response?.data?.errors?.[0]?.message 
         || (err as Error).message 
         || 'Registration failed';

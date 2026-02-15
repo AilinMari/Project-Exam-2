@@ -19,14 +19,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      console.log('Attempting login with:', { email: formData.email });
-      
       const response = await apiClient.post<AuthResponse>(
         API_ENDPOINTS.login,
         formData
       );
-
-      console.log('Login successful:', response);
 
       // Store access token and username first
       localStorage.setItem('accessToken', response.data.accessToken);
@@ -38,19 +34,15 @@ export default function Login() {
           `${API_ENDPOINTS.profileByName(response.data.name)}`,
           true
         );
-        console.log('Profile data:', profileResponse);
         const isVenueManager = profileResponse.data?.venueManager || false;
         localStorage.setItem('venueManager', isVenueManager ? 'true' : 'false');
-        console.log('Stored venueManager:', isVenueManager);
-      } catch (profileErr) {
-        console.error('Could not fetch profile:', profileErr);
+      } catch {
         // Default to false if profile fetch fails
         localStorage.setItem('venueManager', 'false');
       }
       
       navigate('/profile');
     } catch (err) {
-      console.error('Login error:', err);
       const errorMessage = (err as { response?: { data?: { errors?: Array<{ message: string }> } }; message?: string })?.response?.data?.errors?.[0]?.message 
         || (err as Error).message 
         || 'Login failed';

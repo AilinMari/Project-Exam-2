@@ -16,11 +16,6 @@ export const fetchVenues = async (
       `${API_ENDPOINTS.venues}?sort=created&sortOrder=desc`
     );
     
-    console.log('Fetched venues:', response.data);
-    console.log('Total venues fetched:', response.data.length);
-    console.log('First venue (newest):', response.data[0]);
-    console.log('Last venue (oldest):', response.data[response.data.length - 1]);
-    
     setVenues(response.data);
     setFilteredVenues(response.data);
     
@@ -30,7 +25,6 @@ export const fetchVenues = async (
       .slice(0, 5);
     setFeaturedVenues(sortedByRating);
   } catch (err) {
-    console.error('Error fetching venues:', err);
     setError(err instanceof Error ? err.message : 'Failed to fetch venues');
   } finally {
     setLoading(false);

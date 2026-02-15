@@ -26,8 +26,7 @@ export const fetchData = async (
         true
       );
       setBookings(bookingsResponse.data || []);
-    } catch (err) {
-      console.error('Error fetching bookings:', err);
+    } catch {
       setBookings([]);
     }
 
@@ -39,13 +38,11 @@ export const fetchData = async (
           true
         );
         setVenues(venuesResponse.data || []);
-      } catch (err) {
-        console.error('Error fetching venues:', err);
+      } catch {
         setVenues([]);
       }
     }
-  } catch (err) {
-    console.error('Error fetching profile:', err);
+  } catch {
     alert('Failed to load profile data');
   } finally {
     setLoading(false);

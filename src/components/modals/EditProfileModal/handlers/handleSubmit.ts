@@ -12,8 +12,8 @@ export const handleSubmit = async (
   try {
     await onSubmit(formData);
     onClose();
-  } catch (error) {
-    console.error('Error updating profile:', error);
+  } catch {
+    // Error handled by parent component
   } finally {
     setSaving(false);
   }

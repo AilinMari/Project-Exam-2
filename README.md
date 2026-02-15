@@ -1,162 +1,179 @@
-# Holidaze - Venue Booking Platform
+# Holidaze - Venue Booking Application
 
-A modern venue booking application built with React, TypeScript, Tailwind CSS, and Vite.
+A fully functional venue booking platform built with React and TypeScript. Users can browse available venues, make bookings, and managers can create and manage their own venues.
 
-## 🚀 Features
+## Features
 
-- **Browse Venues**: View and search through available venues
-- **Venue Details**: See detailed information about each venue including amenities, location, and pricing
-- **User Authentication**: Register and login with Noroff API authentication
-- **Book Venues**: Make bookings for selected dates and number of guests
-- **User Profile**: Manage your bookings and view booking history
-- **Venue Manager**: Special role for users who want to list their own venues
+- **Browse & Search Venues** - View all available venues with search functionality
+- **Venue Details** - See comprehensive information including images, amenities, location, and pricing
+- **User Authentication** - Register and login with Noroff API
+- **Make Bookings** - Book venues for specific dates with interactive calendar
+- **User Profile** - View booking history, manage bookings, and edit profile information
+- **Venue Management** - Venue managers can create, edit, and delete their venues
+- **Responsive Design** - Works seamlessly on mobile, tablet, and desktop
+- **Toast Notifications** - User feedback for all actions (success, error, warning, info)
+- **Protected Routes** - Authentication guard for protected pages
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Vite** - Fast build tool and development server
+- **Vite** - Build tool
 - **React 18** - UI library
 - **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first CSS framework
-- **React Router** - Client-side routing
-- **Noroff API v2** - Backend API for Holidaze
+- **Tailwind CSS** - Styling
+- **React Router** - Routing
+- **Axios** - HTTP client
+- **Noroff API v2** - Backend
 
-## 📋 Prerequisites
+## Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v16+)
 - npm or yarn
-- A Noroff student email (@stud.noroff.no or @noroff.no) for registration
+- Noroff student email (@stud.noroff.no)
 
-## 🔧 Installation
+## Installation
 
-1. Clone the repository:
+1. Clone and install:
 
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd Project-Exam-2
-```
-
-2. Install dependencies:
-
-```bash
 npm install
 ```
 
-3. **Configure API Key** (Important!):
-   - Open `src/config/api.ts`
-   - Replace `YOUR_API_KEY_HERE` with your actual Noroff API key
-   - You can get an API key from: https://docs.noroff.dev/docs/v2
-
-4. Start the development server:
+2. Start development server:
 
 ```bash
 npm run dev
 ```
 
-5. Open your browser and navigate to `http://localhost:5173`
+3. Open `http://localhost:5173`
 
-## 📝 Available Scripts
+## How to Use
 
-- `npm run dev` - Start development server
+### For Customers
+
+1. Register with your Noroff email
+2. Browse venues from the home page
+3. Click on a venue to see details
+4. Select dates and guest count to make a booking
+5. View your bookings in your profile
+
+### For Venue Managers
+
+1. Register and check the "venue manager" option
+2. Go to your profile to create a new venue
+3. Fill in venue details, images, and amenities
+4. Manage your venues from the profile page
+5. View incoming bookings
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── Navbar.tsx              # Navigation
+│   ├── Layout.tsx              # Main layout
+│   ├── Toast.tsx               # Toast notifications
+│   ├── ProtectedRoute.tsx       # Auth guard
+│   ├── SearchBar.tsx           # Search component
+│   ├── venue/                  # Venue-related components
+│   ├── booking/                # Booking calendar
+│   ├── profile/                # Profile components
+│   ├── modals/                 # Forms and modals
+│   └── Carousel.tsx            # Image carousel
+├── pages/
+│   ├── Home.tsx                # Home page
+│   ├── VenueDetails.tsx        # Venue detail page
+│   ├── Profile.tsx             # User profile
+│   ├── Login.tsx               # Login page
+│   └── Register.tsx            # Registration page
+├── context/
+│   └── ToastContext.tsx        # Toast state management
+├── types/
+│   └── index.ts                # TypeScript types
+├── utils/
+│   └── apiClient.ts            # API client
+├── config/
+│   └── api.ts                  # API endpoints
+└── App.tsx                     # Main app
+```
+
+## Scripts
+
+- `npm run dev` - Start dev server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+- `npm run lint` - Run linter
 
-## 🌐 API Configuration
+## API Endpoints
 
-The application uses the Noroff API v2. Key endpoints:
+All requests go to: `https://v2.api.noroff.dev/holidaze`
 
-- **Base URL**: `https://v2.api.noroff.dev`
-- **Venues**: `/holidaze/venues`
-- **Bookings**: `/holidaze/bookings`
-- **Profiles**: `/holidaze/profiles`
-- **Auth**: `/auth/register` and `/auth/login`
+- **GET /venues** - Get all venues
+- **GET /venues/:id** - Get venue details
+- **POST /bookings** - Create booking
+- **DELETE /bookings/:id** - Cancel booking
+- **POST /venues** - Create venue (managers only)
+- **PUT /venues/:id** - Update venue (managers only)
+- **DELETE /venues/:id** - Delete venue (managers only)
+- **PUT /profiles/:name** - Update profile
 
-### Important API Notes:
+## Key Implementation Details
 
-1. **Registration**: Must use a valid `@stud.noroff.no` or `@noroff.no` email
-2. **Authentication**: Access token is stored in localStorage after login
-3. **Venue Manager**: Check the "venue manager" option during registration to list venues
-4. **Query Parameters**: Use `_owner=true`, `_bookings=true`, etc. to include related data
+### Authentication
 
-## 📁 Project Structure
+- JWT token stored in localStorage
+- Protected routes redirect to login if not authenticated
+- Logout clears token and redirects to home
 
-```
-Project-Exam-2/
-├── src/
-│   ├── components/
-│   │   └── Layout.tsx          # Main layout with navigation
-│   ├── pages/
-│   │   ├── Home.tsx            # Venue listing page
-│   │   ├── VenueDetails.tsx    # Individual venue page
-│   │   ├── Login.tsx           # Login page
-│   │   ├── Register.tsx        # Registration page
-│   │   └── Profile.tsx         # User profile & bookings
-│   ├── types/
-│   │   └── index.ts            # TypeScript interfaces
-│   ├── utils/
-│   │   └── apiClient.ts        # API client utility
-│   ├── config/
-│   │   └── api.ts              # API configuration
-│   ├── App.tsx                 # Main app component
-│   ├── main.tsx                # Entry point
-│   └── index.css               # Global styles
-├── index.html
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-├── vite.config.ts
-└── README.md
-```
+### Bookings
 
-## 🔐 Authentication Flow
+- Interactive calendar shows booked dates
+- Date range selection with validation
+- Real-time price calculation
+- Confirmation dialog before booking
 
-1. **Register**: Create an account with Noroff email
-2. **Login**: Authenticate and receive access token
-3. **Token Storage**: Token saved in localStorage
-4. **Protected Routes**: Profile and booking features require authentication
+### Profile Management
 
-## 🎨 Styling
+- Edit bio, avatar, and banner
+- View all personal bookings
+- For managers: Create, edit, delete venues
+- View incoming bookings for your venues
 
-The application uses Tailwind CSS for styling with:
+### Notifications
 
-- Responsive design for mobile, tablet, and desktop
-- Dark mode support in configuration
-- Custom color scheme with blue as primary color
-- Hover states and transitions for better UX
+- Success toasts for completed actions
+- Error toasts with helpful messages
+- Auto-dismiss after 3 seconds
+- Manual close button available
 
-## 🚧 Future Enhancements
+## Styling
 
-- [ ] Create and manage venues (for venue managers)
-- [ ] Edit user profile (avatar, banner, bio)
-- [ ] Venue image gallery lightbox
-- [ ] Calendar view for availability
-- [ ] Booking confirmation emails
-- [ ] Reviews and ratings system
-- [ ] Advanced search filters
-- [ ] Map integration for venue locations
+Uses Tailwind CSS with:
 
-## 📚 API Documentation
+- Blue (#2563EB) as primary color
+- Orange (#EA580C) as secondary color
+- Gray scale for UI elements
+- Responsive breakpoints
+- Custom animations for toasts
 
-For detailed API documentation, visit:
+## Future Improvements
 
-- [Holidaze Bookings](https://docs.noroff.dev/docs/v2/holidaze/bookings)
-- [Holidaze Venues](https://docs.noroff.dev/docs/v2/holidaze/venues)
-- [Holidaze Profiles](https://docs.noroff.dev/docs/v2/holidaze/profiles)
+- Email confirmation for bookings
+- Review and rating system
+- Advanced search filters by price, location, amenities
+- Visual booking calendar for managers (currently shows list)
+- Image optimization and lazy loading
+- Unit tests
+- Guest reviews and ratings on past bookings
 
-## 🐛 Known Issues
+## Notes
 
-- API key must be configured manually in `src/config/api.ts`
-- Some TypeScript errors in development are normal (related to CSS imports)
-- Venue creation feature not yet implemented (coming soon)
+- Make sure to use a valid @stud.noroff.no email to register
+- Venue managers must select the venue manager option during registration
+- All images for venues must be valid URLs
+- The application uses localStorage for authentication - clearing browser data will log you out
 
-## 📄 License
+## Assignment Details
 
-This project is created as part of a Noroff school assignment.
-
-## 👤 Author
-
-Your Name - Noroff Student
-
----
-
-**Note**: Remember to add your API key before running the application!
+This project was created as a Noroff Exam Project 2. It demonstrates full CRUD operations, authentication, state management, and responsive UI design using modern React practices.
